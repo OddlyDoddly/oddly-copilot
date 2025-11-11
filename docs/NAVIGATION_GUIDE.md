@@ -50,13 +50,13 @@ oddly-copilot/
 │   └── TOOL_REFERENCE.md        # Available tools and usage
 │
 ├── examples/                    # Example agent implementations
-│   ├── code-review-agent.md     # Code review agent example
-│   ├── documentation-agent.md   # Documentation agent example
-│   └── python-testing-agent.md  # Python testing agent example
+│   ├── code-review-agent.agent.md     # Code review agent example
+│   ├── documentation-agent.agent.md   # Documentation agent example
+│   └── python-testing-agent.agent.md  # Python testing agent example
 │
 └── templates/                   # Templates for creating agents
-    ├── basic-agent-template.md     # Template for simple agents
-    └── advanced-agent-template.md  # Template for complex agents
+    ├── basic-agent-template.agent.md     # Template for simple agents
+    └── advanced-agent-template.agent.md  # Template for complex agents
 ```
 
 ## Learning Paths
@@ -70,10 +70,10 @@ oddly-copilot/
 2. docs/QUICK_START.md
    ↓ Learn the basics in 5 minutes
    
-3. examples/python-testing-agent.md
+3. examples/python-testing-agent.agent.md
    ↓ See a complete example
    
-4. templates/basic-agent-template.md
+4. templates/basic-agent-template.agent.md
    ↓ Copy and start creating your own
    
 5. docs/FAQ.md
@@ -86,7 +86,7 @@ oddly-copilot/
 1. docs/AGENT_DESIGN_GUIDE.md
    ↓ Learn design principles
    
-2. examples/code-review-agent.md
+2. examples/code-review-agent.agent.md
    ↓ Study a more complex example
    
 3. docs/TOOL_REFERENCE.md
@@ -95,7 +95,7 @@ oddly-copilot/
 4. docs/AGENT_SCHEMA.md
    ↓ Understand the formal structure
    
-5. templates/advanced-agent-template.md
+5. templates/advanced-agent-template.agent.md
    ↓ Use for more sophisticated agents
 ```
 
@@ -136,23 +136,23 @@ oddly-copilot/
 
 | Template | Use For | Complexity |
 |----------|---------|------------|
-| **basic-agent-template.md** | Simple, focused agents | ⭐ Beginner |
-| **advanced-agent-template.md** | Complex, multi-step agents | ⭐⭐⭐ Advanced |
+| **basic-agent-template.agent.md** | Simple, focused agents | ⭐ Beginner |
+| **advanced-agent-template.agent.md** | Complex, multi-step agents | ⭐⭐⭐ Advanced |
 
 ### Examples
 
 | Example | Demonstrates | Learn About |
 |---------|--------------|-------------|
-| **python-testing-agent.md** | Testing agent with pytest | Test creation, fixtures, coverage |
-| **code-review-agent.md** | Review agent for PRs | Code analysis, feedback generation |
-| **documentation-agent.md** | Documentation creation | Technical writing, markdown |
+| **python-testing-agent.agent.md** | Testing agent with pytest | Test creation, fixtures, coverage |
+| **code-review-agent.agent.md** | Review agent for PRs | Code analysis, feedback generation |
+| **documentation-agent.agent.md** | Documentation creation | Technical writing, markdown |
 
 ## Common Tasks
 
 ### Task: Create My First Agent
 
 1. Read [QUICK_START.md](QUICK_START.md) - 5 minutes
-2. Copy [templates/basic-agent-template.md](../templates/basic-agent-template.md)
+2. Copy [templates/basic-agent-template.agent.md](../templates/basic-agent-template.agent.md)
 3. Fill in the sections following the guide
 4. Test with a simple scenario
 5. Iterate and improve
@@ -209,9 +209,9 @@ Looking for specific concepts? Find them here:
 - **Validation Rules**: [AGENT_SCHEMA.md](AGENT_SCHEMA.md#validation-rules)
 
 ### Examples
-- **Testing Example**: [examples/python-testing-agent.md](../examples/python-testing-agent.md)
-- **Review Example**: [examples/code-review-agent.md](../examples/code-review-agent.md)
-- **Documentation Example**: [examples/documentation-agent.md](../examples/documentation-agent.md)
+- **Testing Example**: [examples/python-testing-agent.agent.md](../examples/python-testing-agent.agent.md)
+- **Review Example**: [examples/code-review-agent.agent.md](../examples/code-review-agent.agent.md)
+- **Documentation Example**: [examples/documentation-agent.agent.md](../examples/documentation-agent.agent.md)
 
 ## Tips for Navigation
 

@@ -43,12 +43,12 @@ Start simple and iterate!
 
 ### Do I have to write config files manually?
 
-**No!** Use the Agent Builder agent (`.github/agents/agent-builder.md`). It will ask you questions and automatically generate a complete agent definition file for you. No manual file editing required!
+**No!** Use the Agent Builder agent (`.github/agents/agent-builder.agent.md`). It will ask you questions and automatically generate a complete agent definition file for you. No manual file editing required!
 
 ### Which template should I use?
 
-- **Basic Template** (`templates/basic-agent-template.md`): For straightforward, single-purpose agents
-- **Advanced Template** (`templates/advanced-agent-template.md`): For complex agents with sophisticated logic and multi-step workflows
+- **Basic Template** (`templates/basic-agent-template.agent.md`): For straightforward, single-purpose agents
+- **Advanced Template** (`templates/advanced-agent-template.agent.md`): For complex agents with sophisticated logic and multi-step workflows
 
 When in doubt, start with the basic template.
 
@@ -173,9 +173,9 @@ Keep each agent in its own file:
 
 ```
 .github/agents/
-  ├── python-testing-agent.md
-  ├── python-linting-agent.md
-  └── python-formatting-agent.md
+  ├── python-testing-agent.agent.md
+  ├── python-linting-agent.agent.md
+  └── python-formatting-agent.agent.md
 ```
 
 Each should have a single, clear purpose.

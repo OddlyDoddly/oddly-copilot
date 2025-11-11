@@ -46,7 +46,7 @@ Agent Builder: [asks a few more questions...]
 ✅ Agent created at .github/agents/python-test-creator.md
 ```
 
-See [.github/agents/agent-builder.md](.github/agents/agent-builder.md) for details.
+See [.github/agents/agent-builder.agent.md](.github/agents/agent-builder.agent.md) for details.
 
 ### 📝 The Manual Way: Use Templates
 

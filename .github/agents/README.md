@@ -64,9 +64,9 @@ Agents defined in this directory can be invoked through GitHub Copilot's agent s
 
 For example implementations, see the `../../examples/` directory:
 
-- `python-testing-agent.md` - Testing agent example
-- `code-review-agent.md` - Code review agent example
-- `documentation-agent.md` - Documentation agent example
+- `python-testing-agent.agent.md` - Testing agent example
+- `code-review-agent.agent.md` - Code review agent example
+- `documentation-agent.agent.md` - Documentation agent example
 
 ## Resources
 

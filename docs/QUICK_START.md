@@ -49,7 +49,7 @@ Agent Builder: [asks a few more questions...]
 
 **That's it!** Your agent is ready to use. No manual file editing required.
 
-See [agent-builder.md](../.github/agents/agent-builder.md) for full details.
+See [agent-builder.agent.md](../.github/agents/agent-builder.agent.md) for full details.
 
 ---
 
@@ -72,10 +72,10 @@ Example: "I need an agent that creates React component test files using Jest"
 cd /path/to/oddly-copilot
 
 # For simple, focused agents:
-cp templates/basic-agent-template.md .github/agents/my-agent.md
+cp templates/basic-agent-template.agent.md .github/agents/my-agent.agent.md
 
 # For complex, multi-step agents:
-cp templates/advanced-agent-template.md .github/agents/my-agent.md
+cp templates/advanced-agent-template.agent.md .github/agents/my-agent.agent.md
 ```
 
 **When to use each:**
