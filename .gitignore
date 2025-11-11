@@ -1,0 +1,38 @@
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Editor directories
+.vscode/
+.idea/
+*.sublime-*
+
+# Build outputs
+dist/
+build/
+*.pyc
+__pycache__/
+node_modules/
+
+# Test outputs
+coverage/
+.coverage
+*.cover
+.pytest_cache/
+test-results/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db

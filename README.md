@@ -1,2 +1,90 @@
 # oddly-copilot
-Copilot agents and scripts
+
+A repository for designing and managing GitHub Copilot agent scripts and behaviors.
+
+## Overview
+
+This repository serves as a central location for defining custom GitHub Copilot agents that can be used to automate various development tasks. Each agent is designed with specific expertise and capabilities to handle particular domains or workflows.
+
+## Repository Structure
+
+```
+.github/agents/     # Agent definition files
+examples/           # Example agent implementations
+templates/          # Templates for creating new agents
+docs/              # Documentation and guides
+```
+
+## What are Copilot Agents?
+
+Copilot agents are specialized AI assistants that can be configured to handle specific tasks in your development workflow. They can be customized with:
+
+- **Domain expertise**: Specialized knowledge in particular technologies or domains
+- **Custom tools**: Access to specific tools and APIs
+- **Behavioral instructions**: Guidelines for how the agent should approach problems
+- **Context awareness**: Understanding of your codebase and project structure
+
+## Getting Started
+
+### Creating a New Agent
+
+1. Start with a template from the `templates/` directory
+2. Define your agent's:
+   - **Name**: A clear, descriptive name
+   - **Purpose**: What problem does this agent solve?
+   - **Expertise**: What domains or technologies is it specialized in?
+   - **Instructions**: How should it approach tasks?
+   - **Tools**: What tools does it need access to?
+
+3. Save your agent definition in `.github/agents/`
+
+### Using an Agent
+
+Agents defined in this repository can be invoked through GitHub Copilot's agent system. Reference the agent by name and provide it with the necessary context for your task.
+
+## Examples
+
+See the `examples/` directory for sample agent implementations that demonstrate:
+
+- Code review agents
+- Testing agents
+- Documentation agents
+- Deployment agents
+- Security scanning agents
+
+## Best Practices
+
+1. **Single Responsibility**: Each agent should have a clear, focused purpose
+2. **Clear Instructions**: Provide detailed, unambiguous guidance
+3. **Context Awareness**: Include information about when and how to use the agent
+4. **Tool Selection**: Only grant access to tools the agent actually needs
+5. **Testing**: Validate agent behavior with various scenarios
+6. **Documentation**: Include clear documentation for each agent
+
+## Contributing
+
+When adding new agents:
+
+1. Use the provided templates
+2. Follow the naming conventions
+3. Include comprehensive documentation
+4. Test thoroughly before committing
+5. Update this README if adding new categories
+
+## Agent Categories
+
+- **Development**: Code generation, refactoring, and optimization
+- **Testing**: Test creation, execution, and analysis
+- **Documentation**: Technical writing and maintenance
+- **Security**: Vulnerability scanning and remediation
+- **DevOps**: Deployment, CI/CD, and infrastructure
+
+## Learn More
+
+- See `docs/AGENT_DESIGN_GUIDE.md` for detailed agent design principles
+- See `docs/TOOL_REFERENCE.md` for available tools and their usage
+- See `examples/` for practical implementations
+
+## License
+
+[Add your license here]
