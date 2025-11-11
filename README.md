@@ -81,8 +81,11 @@ When adding new agents:
 
 ## Learn More
 
+- See `docs/QUICK_START.md` for a quick introduction to creating agents
 - See `docs/AGENT_DESIGN_GUIDE.md` for detailed agent design principles
 - See `docs/TOOL_REFERENCE.md` for available tools and their usage
+- See `docs/AGENT_SCHEMA.md` for agent definition requirements
+- See `docs/FAQ.md` for frequently asked questions
 - See `examples/` for practical implementations
 
 ## License
