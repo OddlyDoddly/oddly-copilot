@@ -163,6 +163,12 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
    - .gitignore MUST exist BEFORE any code generation
    - If build artifacts appear in PR, you have FAILED
 
+❌ **Mixing interfaces and implementations in the same directory**
+   - Interfaces MUST be in parent directory (e.g., `/application/services/`)
+   - Implementations MUST be in `/impl` subdirectory (e.g., `/application/services/impl/`)
+   - **WRONG**: `OrderService.cs` and `IOrderService.cs` both in `/application/services/`
+   - **CORRECT**: `IOrderService.cs` in `/application/services/`, `OrderService.cs` in `/application/services/impl/`
+
 ---
 
 # Architectural rules (MANDATORY)
@@ -298,6 +304,77 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
 - /application/services/ → Application.Services
 - /domain/models/ → Domain.Models
 - /infrastructure/persistence/ → Infrastructure.Persistence
+
+## Interface/Implementation Separation (MANDATORY)
+
+**MUST separate interfaces from implementations:**
+
+- **Interfaces**: Place in the main directory (e.g., `/application/services/`, `/infrastructure/repositories/`)
+- **Implementations**: Place in `/impl` subdirectory (e.g., `/application/services/impl/`, `/infrastructure/repositories/impl/`)
+
+**Example structure:**
+```
+/src/application/
+  /services/
+    IOrderService.cs              # Interface
+    /impl/
+      OrderService.cs              # Implementation
+
+/src/infrastructure/
+  /repositories/
+    IOrderRepository.cs           # Interface
+    /impl/
+      OrderRepository.cs           # Implementation
+```
+
+**Rules:**
+- MUST: Interface files in parent directory
+- MUST: Implementation files in `/impl` subdirectory
+- MUST: Interface names start with `I` (e.g., `IOrderService`, `IOrderRepository`)
+- MUST: Implementation names match interface without `I` (e.g., `OrderService`, `OrderRepository`)
+- MUST NOT: Mix interfaces and implementations in the same directory
+- MUST: Follow this pattern for Services, Repositories, and any other abstraction layers
+
+**C# Example:**
+```csharp
+// /application/services/IOrderService.cs
+namespace Application.Services
+{
+    public interface IOrderService
+    {
+        Task<OrderModel> CreateOrderAsync(CreateOrderRequest p_request);
+    }
+}
+
+// /application/services/impl/OrderService.cs
+namespace Application.Services.Impl
+{
+    public class OrderService : IOrderService
+    {
+        public async Task<OrderModel> CreateOrderAsync(CreateOrderRequest p_request)
+        {
+            // Implementation
+        }
+    }
+}
+```
+
+**TypeScript Example:**
+```typescript
+// /application/services/IOrderService.ts
+export interface IOrderService {
+  createOrderAsync(request: CreateOrderRequest): Promise<OrderModel>;
+}
+
+// /application/services/impl/OrderService.ts
+import { IOrderService } from '../IOrderService';
+
+export class OrderService implements IOrderService {
+  async createOrderAsync(request: CreateOrderRequest): Promise<OrderModel> {
+    // Implementation
+  }
+}
+```
 
 ---
 
@@ -627,12 +704,14 @@ Must include:
   - <Feature>Mapper.(cs|ts|py)     # MANDATORY - never skip
 
 /src/application/services/
-  - I<Feature>Service.(cs|ts|py)
-  - <Feature>Service.(cs|ts|py)
+  - I<Feature>Service.(cs|ts|py)   # Interface in parent directory
+  - /impl/
+    - <Feature>Service.(cs|ts|py)  # Implementation in /impl subdirectory
 
 /src/infrastructure/repositories/
-  - I<Feature>Repository.(cs|ts|py)
-  - <Feature>Repository.(cs|ts|py)
+  - I<Feature>Repository.(cs|ts|py)  # Interface in parent directory
+  - /impl/
+    - <Feature>Repository.(cs|ts|py)  # Implementation in /impl subdirectory
 
 /src/api/dto/v1/
   - <Feature>Request.(cs|ts|py)
@@ -668,6 +747,7 @@ Must include:
 5. ✅ MUST use Model suffix for domain classes
 6. ✅ MUST follow the exact filesystem structure
 7. ✅ MUST prioritize these custom standards over C#/Java/framework conventions
+8. ✅ MUST separate interfaces from implementations (interfaces in parent, implementations in /impl)
 
 **If you violate any of these rules, you have failed the task.**
 
