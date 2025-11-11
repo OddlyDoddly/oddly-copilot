@@ -188,6 +188,23 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
    - **WRONG**: Single repository with mixed read/write methods
    - **CORRECT**: Separate CommandRepository and QueryRepository with clear responsibilities
 
+❌ **Manual transaction management in services or controllers**
+   - UnitOfWork middleware MUST handle all transactions
+   - Services MUST NOT call BeginTransaction/Commit/Rollback directly
+   - **WRONG**: Service manually managing transactions
+   - **CORRECT**: UnitOfWork middleware wraps entire request/message
+
+❌ **Skipping ownership/security checks**
+   - MUST verify user owns resource before access (unless explicitly public)
+   - Ownership middleware MUST execute before business logic
+   - **WRONG**: Controller directly accessing any resource by ID
+   - **CORRECT**: Middleware verifies ownership first
+
+❌ **Domain events without proper naming convention**
+   - MUST suffix with `Event` using pattern `{ObjectName}{EventName}Event`
+   - **WRONG**: `OrderCreation`, `UserRegistered`, `PaymentEvent`
+   - **CORRECT**: `OrderCreatedEvent`, `UserRegisteredEvent`, `PaymentProcessedEvent`
+
 ---
 
 # Architectural rules (MANDATORY)
@@ -336,6 +353,23 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
   - MUST: Be typed, service-scoped
   - MUST NOT: Leak internal messages past controllers
 
+- **Domain Events**: 
+  - MUST: Represent significant domain occurrences
+  - MUST: Live in `/domain/events/`
+  - MUST: Have suffix `Event` with pattern: `{ObjectName}{EventName}Event`
+  - MUST: Be immutable (all fields readonly/final)
+  - MUST NOT: Contain business logic
+  - Examples: `OrderCreatedEvent`, `UserRegisteredEvent`, `PaymentProcessedEvent`
+  - Used for: Cross-subdomain communication via message queue
+  
+- **Queue Interfaces**: 
+  - MUST: Abstract queue implementation details
+  - MUST: Live in `/infrastructure/queues/`
+  - MUST: Follow observer pattern for event subscriptions
+  - MUST: Use `IEventPublisher` and `IEventSubscriber` interfaces
+  - Each subdomain (repository) publishes and subscribes to domain events
+  - Fan-out topics for multiple subscribers
+
 ## RULES (MANDATORY):
 
 - MUST: Controllers → Services → Repositories → DB. No sideways calls
@@ -355,7 +389,7 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
   /api/
     /controllers/          # HTTP endpoints (REST). Map DTOs. No business logic
     /dto/                  # Request/Response DTOs; versioned by API version
-    /middleware/           # auth, logging, errors, rate limits
+    /middleware/           # Security, UnitOfWork, auth, logging, errors, rate limits
   /application/
     /services/             # use-cases; transaction boundaries
     /mappers/              # DTO↔BMO↔Entity transformers (MANDATORY)
@@ -369,7 +403,8 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
     /persistence/          # Entities with DB attributes, contexts, migrations
       /write/              # WriteEntities for commands (business logic execution)
       /read/               # ReadEntities for queries (pre-rendered views)
-    /queues/               # producers/consumers; job schemas
+    /queues/               # Event publisher/subscriber; domain event handlers
+      /middleware/         # Queue-specific middleware (UnitOfWork for messages)
     /integrations/         # external HTTP clients with strict interfaces
     /cache/                # cache client/policies
 /tests/
@@ -470,6 +505,9 @@ export class OrderService implements IOrderService {
 - MUST: Read entities (queries) end with: `ReadEntity`
 - MUST: Business models end with: `Model` or `BMO`
 - MUST: DTOs end with: `Request` | `Response` | `Dto`
+- MUST: Domain events end with: `Event` using pattern `{ObjectName}{EventName}Event`
+  - Examples: `OrderCreatedEvent`, `UserRegisteredEvent`, `PaymentProcessedEvent`
+- MUST: Middleware end with: `Middleware`
 - MUST: Async functions end with `Async` (e.g., `FindOrderByIdAsync`)
 - MUST: Repository methods describe intent verbosely:
   - `FindObjectByIdAndNameAsync`, `DeleteObjectByIdAsync`, `ListOrdersByStatusAndDateRangeAsync`
@@ -665,6 +703,406 @@ interface IMapper<TDto, TModel, TWriteEntity, TReadEntity> {
   ToResponseFromModel(model: TModel): BaseResponseDto
 }
 ```
+
+---
+
+# Middleware Patterns (MANDATORY)
+
+**MUST implement these middleware layers in order:**
+
+## 1. Security/Authorization Middleware (MANDATORY)
+
+**MUST check object ownership before allowing access:**
+
+- MUST: Verify user owns or has permission to access resource
+- MUST: Execute BEFORE controller logic
+- MUST: Live in `/api/middleware/`
+- MUST: Use claims/tokens to identify current user
+- MUST: Check ownership against resource in database
+- MUST NOT: Allow access to resources user doesn't own unless explicitly public
+
+**Pattern:**
+```typescript
+// /api/middleware/OwnershipMiddleware.ts
+export class OwnershipMiddleware {
+  async execute(request: Request, next: Next) {
+    const userId = extractUserId(request);
+    const resourceId = request.params.id;
+    
+    // Check if resource is public
+    if (await isPublicResource(resourceId)) {
+      return next();
+    }
+    
+    // Verify ownership
+    if (!await verifyOwnership(userId, resourceId)) {
+      throw new ForbiddenException('Access denied');
+    }
+    
+    return next();
+  }
+}
+```
+
+**C# Pattern:**
+```csharp
+// /api/middleware/OwnershipMiddleware.cs
+public class OwnershipMiddleware
+{
+    public async Task InvokeAsync(HttpContext p_context, RequestDelegate p_next)
+    {
+        var userId = ExtractUserId(p_context);
+        var resourceId = p_context.Request.RouteValues["id"];
+        
+        // Check if resource is public
+        if (await IsPublicResourceAsync(resourceId))
+        {
+            await p_next(p_context);
+            return;
+        }
+        
+        // Verify ownership
+        if (!await VerifyOwnershipAsync(userId, resourceId))
+        {
+            throw new ForbiddenException("Access denied");
+        }
+        
+        await p_next(p_context);
+    }
+}
+```
+
+## 2. Unit of Work Middleware (MANDATORY)
+
+**MUST encapsulate each request/queue message in a single transaction:**
+
+- MUST: Start transaction at request/message start
+- MUST: Commit transaction on success
+- MUST: Rollback transaction on failure
+- MUST: Live in `/api/middleware/` (for HTTP) and `/infrastructure/queues/middleware/` (for queue messages)
+- MUST: Execute AFTER security middleware
+- MUST NOT: Require manual transaction management in services/repositories
+- Repositories use `Save()` functions, but transaction spans entire request
+
+**HTTP Request Pattern:**
+```typescript
+// /api/middleware/UnitOfWorkMiddleware.ts
+export class UnitOfWorkMiddleware {
+  constructor(private _unitOfWork: IUnitOfWork) {}
+  
+  async execute(request: Request, response: Response, next: Next) {
+    try {
+      await this._unitOfWork.beginTransaction();
+      
+      await next();
+      
+      if (response.statusCode < 400) {
+        await this._unitOfWork.commit();
+      } else {
+        await this._unitOfWork.rollback();
+      }
+    } catch (error) {
+      await this._unitOfWork.rollback();
+      throw error;
+    }
+  }
+}
+```
+
+**Queue Message Pattern:**
+```typescript
+// /infrastructure/queues/middleware/QueueUnitOfWorkMiddleware.ts
+export class QueueUnitOfWorkMiddleware {
+  constructor(private _unitOfWork: IUnitOfWork) {}
+  
+  async execute(message: QueueMessage, handler: MessageHandler) {
+    try {
+      await this._unitOfWork.beginTransaction();
+      
+      await handler(message);
+      
+      await this._unitOfWork.commit();
+      await message.ack(); // Acknowledge message
+    } catch (error) {
+      await this._unitOfWork.rollback();
+      await message.nack(); // Negative acknowledgment
+      throw error;
+    }
+  }
+}
+```
+
+**C# Pattern:**
+```csharp
+// /api/middleware/UnitOfWorkMiddleware.cs
+public class UnitOfWorkMiddleware
+{
+    private readonly IUnitOfWork _unitOfWork;
+    
+    public UnitOfWorkMiddleware(IUnitOfWork p_unitOfWork)
+    {
+        _unitOfWork = p_unitOfWork;
+    }
+    
+    public async Task InvokeAsync(HttpContext p_context, RequestDelegate p_next)
+    {
+        try
+        {
+            await _unitOfWork.BeginTransactionAsync();
+            
+            await p_next(p_context);
+            
+            if (p_context.Response.StatusCode < 400)
+            {
+                await _unitOfWork.CommitAsync();
+            }
+            else
+            {
+                await _unitOfWork.RollbackAsync();
+            }
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+    }
+}
+```
+
+**Unit of Work Interface:**
+```typescript
+// /application/persistence/IUnitOfWork.ts
+export interface IUnitOfWork {
+  beginTransaction(): Promise<void>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+  saveChanges(): Promise<void>; // Called by repositories
+}
+```
+
+## Middleware Order (MANDATORY)
+
+**MUST apply in this exact order:**
+
+1. **Correlation ID** - Generate/extract request ID
+2. **Logging** - Log request start
+3. **Authentication** - Verify identity
+4. **Authorization/Ownership** - Verify permissions and ownership
+5. **Unit of Work** - Begin transaction
+6. **Controller** - Execute business logic
+7. **Unit of Work** - Commit/rollback transaction
+8. **Error Handling** - Catch and format errors
+9. **Logging** - Log request end
+
+**Pipeline Configuration Example:**
+```typescript
+app.use(correlationIdMiddleware);
+app.use(loggingMiddleware);
+app.use(authenticationMiddleware);
+app.use(ownershipMiddleware);      // NEW: Check ownership
+app.use(unitOfWorkMiddleware);     // NEW: Manage transactions
+app.use(errorHandlingMiddleware);
+app.use(controllers);
+```
+
+## Public Resources Pattern
+
+**For resources that are publicly accessible:**
+
+```typescript
+// Mark resources as public in metadata
+@Public() // Decorator
+@Get('/posts/:id')
+async getPost(id: string) {
+  // Ownership check skipped
+}
+
+// Or check in service
+class PostService {
+  async getPostById(id: string, userId?: string) {
+    const post = await this._repository.findById(id);
+    
+    if (!post.isPublic && post.authorId !== userId) {
+      throw new ForbiddenException();
+    }
+    
+    return post;
+  }
+}
+```
+
+---
+
+# Domain Events & Queue Abstraction (MANDATORY)
+
+**MUST implement observer pattern for cross-subdomain communication:**
+
+## Domain Event Rules:
+
+- MUST: Suffix with `Event` using pattern: `{ObjectName}{EventName}Event`
+- MUST: Be immutable (readonly/final fields)
+- MUST: Live in `/domain/events/`
+- MUST: Contain only data, no behavior
+- MUST: Include timestamp and correlation ID
+- Examples: `OrderCreatedEvent`, `UserRegisteredEvent`, `PaymentProcessedEvent`
+
+**Domain Event Pattern:**
+```typescript
+// /domain/events/OrderCreatedEvent.ts
+export class OrderCreatedEvent {
+  readonly eventId: string;
+  readonly orderId: string;
+  readonly userId: string;
+  readonly timestamp: Date;
+  readonly correlationId: string;
+  
+  constructor(data: OrderCreatedEventData) {
+    this.eventId = generateId();
+    this.orderId = data.orderId;
+    this.userId = data.userId;
+    this.timestamp = new Date();
+    this.correlationId = data.correlationId;
+    
+    Object.freeze(this); // Immutable
+  }
+}
+```
+
+**C# Pattern:**
+```csharp
+// /domain/events/OrderCreatedEvent.cs
+namespace Domain.Events
+{
+    public sealed class OrderCreatedEvent
+    {
+        public string EventId { get; }
+        public string OrderId { get; }
+        public string UserId { get; }
+        public DateTime Timestamp { get; }
+        public string CorrelationId { get; }
+        
+        public OrderCreatedEvent(
+            string p_orderId,
+            string p_userId,
+            string p_correlationId
+        )
+        {
+            EventId = Guid.NewGuid().ToString();
+            OrderId = p_orderId;
+            UserId = p_userId;
+            Timestamp = DateTime.UtcNow;
+            CorrelationId = p_correlationId;
+        }
+    }
+}
+```
+
+## Queue Abstraction (Observer Pattern):
+
+**MUST use these interfaces:**
+
+```typescript
+// /infrastructure/queues/IEventPublisher.ts
+export interface IEventPublisher {
+  publish<TEvent>(event: TEvent, topic: string): Promise<void>;
+  publishBatch<TEvent>(events: TEvent[], topic: string): Promise<void>;
+}
+
+// /infrastructure/queues/IEventSubscriber.ts
+export interface IEventSubscriber {
+  subscribe<TEvent>(
+    topic: string, 
+    handler: (event: TEvent) => Promise<void>
+  ): Promise<void>;
+  
+  unsubscribe(topic: string): Promise<void>;
+}
+
+// /infrastructure/queues/impl/EventBus.ts
+export class EventBus implements IEventPublisher, IEventSubscriber {
+  // Implementation uses RabbitMQ, Kafka, etc.
+  // Topics fan out to multiple subscribers
+}
+```
+
+**C# Pattern:**
+```csharp
+// /infrastructure/queues/IEventPublisher.cs
+public interface IEventPublisher
+{
+    Task PublishAsync<TEvent>(TEvent p_event, string p_topic);
+    Task PublishBatchAsync<TEvent>(IEnumerable<TEvent> p_events, string p_topic);
+}
+
+// /infrastructure/queues/IEventSubscriber.cs
+public interface IEventSubscriber
+{
+    Task SubscribeAsync<TEvent>(
+        string p_topic, 
+        Func<TEvent, Task> p_handler
+    );
+    Task UnsubscribeAsync(string p_topic);
+}
+```
+
+## Subdomain Communication Pattern:
+
+**Each repository/subdomain:**
+
+1. **Publishes** domain events when state changes
+2. **Subscribes** to events from other subdomains
+3. **Reacts** to events asynchronously
+
+**Example:**
+```typescript
+// Order subdomain publishes event
+class OrderService {
+  async createOrder(request: CreateOrderRequest) {
+    const order = await this._repository.save(orderModel);
+    
+    // Publish event for other subdomains
+    await this._eventPublisher.publish(
+      new OrderCreatedEvent({ 
+        orderId: order.id,
+        userId: order.userId,
+        correlationId: this._correlationId 
+      }),
+      'order.created'
+    );
+    
+    return order;
+  }
+}
+
+// Inventory subdomain subscribes to event
+class InventoryEventSubscriber {
+  constructor(private _eventSubscriber: IEventSubscriber) {
+    this.setupSubscriptions();
+  }
+  
+  private setupSubscriptions() {
+    this._eventSubscriber.subscribe<OrderCreatedEvent>(
+      'order.created',
+      async (event) => {
+        await this.handleOrderCreated(event);
+      }
+    );
+  }
+  
+  private async handleOrderCreated(event: OrderCreatedEvent) {
+    // Reserve inventory for the order
+    await this._inventoryService.reserveItems(event.orderId);
+  }
+}
+```
+
+## Topic Naming Convention:
+
+- MUST: Use format `{subdomain}.{action}` (e.g., `order.created`, `payment.processed`)
+- MUST: Be lowercase with dots as separators
+- MUST: Be past tense for events that happened
+- Examples: `order.created`, `user.registered`, `payment.failed`, `inventory.reserved`
 
 ---
 
@@ -877,6 +1315,23 @@ Must include:
 
 /src/api/controllers/
   - <Feature>Controller.(cs|ts|py)
+
+/src/api/middleware/
+  - OwnershipMiddleware.(cs|ts|py)     # Check resource ownership
+  - UnitOfWorkMiddleware.(cs|ts|py)    # Manage transactions
+
+/src/domain/events/
+  - <Feature><Action>Event.(cs|ts|py) # Domain events: OrderCreatedEvent
+
+/src/infrastructure/queues/
+  - IEventPublisher.(cs|ts|py)         # Publisher interface
+  - IEventSubscriber.(cs|ts|py)        # Subscriber interface
+  - /impl/
+    - EventBus.(cs|ts|py)              # Queue implementation
+  - /middleware/
+    - QueueUnitOfWorkMiddleware.(cs|ts|py) # Transaction for queue messages
+  - /subscribers/
+    - <Feature>EventSubscriber.(cs|ts|py)  # Event handlers
 ```
 
 **DOCUMENT scaffold with CQRS (MUST follow):**
@@ -912,6 +1367,10 @@ Must include:
 9. ✅ MUST prioritize these custom standards over C#/Java/framework conventions
 10. ✅ MUST separate interfaces from implementations (interfaces in parent, implementations in /impl)
 11. ✅ MUST separate Command and Query repositories (ICommandRepository vs IQueryRepository)
+12. ✅ MUST implement OwnershipMiddleware to check resource access before business logic
+13. ✅ MUST implement UnitOfWorkMiddleware to manage transactions automatically
+14. ✅ MUST use domain events with suffix `Event` and pattern `{ObjectName}{EventName}Event`
+15. ✅ MUST abstract queue implementation with IEventPublisher and IEventSubscriber
 
 **If you violate any of these rules, you have failed the task.**
 
