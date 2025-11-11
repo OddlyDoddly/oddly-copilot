@@ -205,6 +205,24 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
    - **WRONG**: `OrderCreation`, `UserRegistered`, `PaymentEvent`
    - **CORRECT**: `OrderCreatedEvent`, `UserRegisteredEvent`, `PaymentProcessedEvent`
 
+❌ **Making HTTP/REST calls between subdomains (backend services)**
+   - REST APIs are ONLY for front-end interactions
+   - Subdomain-to-subdomain communication MUST use domain events via message queue
+   - **WRONG**: Payment service calling Order service's REST endpoint
+   - **CORRECT**: Payment service subscribing to OrderCreatedEvent from message queue
+
+❌ **Direct database access across subdomain boundaries**
+   - Each subdomain MUST have its own database
+   - MUST NOT query another subdomain's database directly
+   - **WRONG**: Order service reading from Payment service's database
+   - **CORRECT**: Order service subscribing to PaymentProcessedEvent
+
+❌ **Returning non-standard HTTP error responses**
+   - MUST follow standard error response contract with code, message, details, timestamp, path, requestId
+   - MUST map ServiceException error codes to appropriate HTTP status codes
+   - **WRONG**: Returning plain text error or custom format
+   - **CORRECT**: Consistent ErrorResponse structure with proper HTTP status
+
 ---
 
 # Architectural rules (MANDATORY)
@@ -1207,6 +1225,284 @@ public class ImageServiceException : ServiceException<ImageErrorCode>
 
 ---
 
+# HTTP Error Response Standards (MANDATORY)
+
+**ALL HTTP error responses MUST follow this contract:**
+
+## Standard Error Response Structure:
+
+```typescript
+interface ErrorResponse {
+  error: {
+    code: string;           // Error code from enum (e.g., "ORDER_NOT_FOUND")
+    message: string;        // Human-readable message
+    details?: object;       // Optional structured details
+    timestamp: string;      // ISO 8601 timestamp
+    path: string;          // Request path that caused the error
+    requestId: string;     // Correlation/request ID for tracing
+  }
+}
+```
+
+## HTTP Status Code Mapping (MANDATORY):
+
+- MUST: Controllers catch ServiceException and map to appropriate HTTP status:
+  - `NotFound` errors → `404 Not Found`
+  - `Conflict` errors → `409 Conflict`
+  - `ValidationFailed` errors → `400 Bad Request`
+  - `Unauthorized` errors → `401 Unauthorized`
+  - `Forbidden` errors → `403 Forbidden`
+  - Unknown errors → `500 Internal Server Error`
+
+- MUST NOT: Leak internal error details or stack traces in production
+- MUST: Log full error details (including stack trace) server-side
+- MUST: Return only safe, user-friendly messages to client
+
+## Example Error Handler (MANDATORY pattern):
+
+```typescript
+// /api/middleware/ErrorHandlerMiddleware.ts
+export class ErrorHandlerMiddleware {
+  async execute(error: Error, request: Request, response: Response, next: Next) {
+    const requestId = request.headers['x-request-id'] || generateId();
+    
+    // Log full error details
+    logger.error('Request failed', {
+      requestId,
+      error: error.message,
+      stack: error.stack,
+      path: request.path
+    });
+    
+    // Map to HTTP response
+    if (error instanceof ServiceException) {
+      const statusCode = this.mapErrorCodeToHttpStatus(error.ErrorCode);
+      return response.status(statusCode).json({
+        error: {
+          code: error.ErrorCode.toString(),
+          message: error.message,
+          details: error.Details,
+          timestamp: new Date().toISOString(),
+          path: request.path,
+          requestId
+        }
+      });
+    }
+    
+    // Unknown errors - don't leak details
+    return response.status(500).json({
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected error occurred',
+        timestamp: new Date().toISOString(),
+        path: request.path,
+        requestId
+      }
+    });
+  }
+}
+```
+
+## Success Response Standards:
+
+- MUST: Return consistent structure for successful operations
+- MUST: Include appropriate HTTP status codes:
+  - `200 OK` - Successful read or update
+  - `201 Created` - Resource successfully created (include Location header)
+  - `204 No Content` - Successful delete or operation with no body
+- MUST: Return data in predictable format:
+
+```typescript
+// Single resource
+interface ResourceResponse<T> {
+  data: T;
+  metadata?: {
+    requestId: string;
+    timestamp: string;
+  };
+}
+
+// Collection
+interface CollectionResponse<T> {
+  data: T[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    hasMore: boolean;
+  };
+  metadata?: {
+    requestId: string;
+    timestamp: string;
+  };
+}
+```
+
+---
+
+# Communication Architecture (MANDATORY - Subdomain Boundaries)
+
+**CRITICAL: Understanding Domain vs Subdomain**
+
+- **Domain**: The entire multi-repository business domain (e.g., e-commerce platform)
+- **Subdomain**: Each individual repository/bounded context (e.g., Order service, Payment service, Inventory service)
+- **NOTE**: Throughout this document, "domain" often refers to "subdomain" - each repo is one subdomain
+
+## Communication Rules (MANDATORY):
+
+### Rule 1: REST Endpoints are ONLY for Front-End Interactions
+
+- MUST: REST/HTTP endpoints (`/api/controllers/`) are EXCLUSIVELY for front-end (UI) interactions
+- MUST NOT: Call REST endpoints from one subdomain to another subdomain
+- MUST NOT: Make HTTP calls between backend services
+- Purpose: REST APIs are the external boundary for user-facing operations
+
+**CORRECT Front-End Pattern:**
+```
+Front-End → REST API (Order Service) → Order Domain Logic
+```
+
+**WRONG Subdomain-to-Subdomain Pattern:**
+```
+❌ Order Service → HTTP Request → Payment Service REST API
+```
+
+### Rule 2: Subdomain-to-Subdomain Communication via Events ONLY
+
+- MUST: Use domain events published to message queue for all cross-subdomain communication
+- MUST: Subscribe to events from other subdomains via queue subscriptions
+- MUST NOT: Make synchronous calls between subdomains
+- Pattern: Observer pattern with fan-out topics
+
+**CORRECT Subdomain-to-Subdomain Pattern:**
+```typescript
+// Order Service (Publisher)
+class OrderService {
+  async createOrder(p_order: OrderModel): Promise<string> {
+    // 1. Create order in own database
+    const orderId = await this._commandRepo.CreateAsync(p_order);
+    
+    // 2. Publish event to queue (async, non-blocking)
+    await this._eventPublisher.Publish(
+      new OrderCreatedEvent({
+        orderId,
+        customerId: p_order.CustomerId,
+        totalAmount: p_order.TotalAmount,
+        items: p_order.Items
+      })
+    );
+    
+    return orderId;
+  }
+}
+
+// Payment Service (Subscriber in different repo)
+class PaymentEventHandler implements IEventSubscriber<OrderCreatedEvent> {
+  async handle(p_event: OrderCreatedEvent): Promise<void> {
+    // React to order creation by processing payment
+    await this._paymentService.ProcessPaymentAsync({
+      orderId: p_event.orderId,
+      amount: p_event.totalAmount
+    });
+  }
+}
+```
+
+### Rule 3: Within Same Subdomain - Direct Service Calls OK
+
+- MUST: Within the same subdomain (same repository), direct service-to-service calls are allowed
+- MUST: Follow layer hierarchy: Controller → Service → Repository
+- MUST NOT: Skip layers (e.g., Controller → Repository directly)
+
+**CORRECT Intra-Subdomain Pattern:**
+```typescript
+// Within Order subdomain - direct calls OK
+class OrderController {
+  async createOrder(p_request: CreateOrderRequest): Promise<CreateOrderResponse> {
+    // Direct service call within same subdomain
+    const order = await this._orderService.CreateOrderAsync(p_request);
+    return this._mapper.ToResponse(order);
+  }
+}
+
+class OrderService {
+  async createOrderAsync(p_request: CreateOrderRequest): Promise<OrderModel> {
+    // Direct repository call within same subdomain
+    const order = this._mapper.ToModel(p_request);
+    return await this._orderCommandRepo.CreateAsync(order);
+  }
+}
+```
+
+## Anti-Patterns (FORBIDDEN):
+
+❌ **HTTP calls between subdomains**
+   - **WRONG**: Payment service calling Order service's REST API
+   - **CORRECT**: Payment service subscribing to OrderCreatedEvent
+
+❌ **Synchronous subdomain coupling**
+   - **WRONG**: `await httpClient.post('http://inventory-service/api/reserve')`
+   - **CORRECT**: Publish `InventoryReservationRequestedEvent`, subscribe to `InventoryReservedEvent`
+
+❌ **Shared database between subdomains**
+   - Each subdomain MUST have its own database
+   - MUST NOT: Query another subdomain's database directly
+   - MUST: Communicate via events only
+
+❌ **Mixing REST and Events incorrectly**
+   - **WRONG**: Front-end subscribing to message queue
+   - **CORRECT**: Front-end uses REST API, backend uses events
+
+## Architecture Summary:
+
+```
+┌─────────────┐
+│  Front-End  │
+└──────┬──────┘
+       │ REST/HTTP ONLY
+       │
+┌──────▼──────────────────────────────────────────┐
+│  API Gateway / REST Controllers                 │
+│  (Front-end boundary)                           │
+└──────┬──────────────────────────────────────────┘
+       │
+       │ Within Subdomain: Direct calls OK
+       │
+┌──────▼──────────────────────────────────────────┐
+│  Subdomain Services & Repositories              │
+│  (Order Service, Payment Service, etc.)         │
+└──────┬─────────────────────┬────────────────────┘
+       │                     │
+       │ Events Only         │ Events Only
+       │                     │
+       ▼                     ▼
+┌─────────────────────────────────────────────────┐
+│       Message Queue (Fan-out Topics)            │
+│  order.created, payment.processed, etc.         │
+└─────────────────────────────────────────────────┘
+       │                     │
+       │ Subscribe           │ Subscribe
+       │                     │
+       ▼                     ▼
+┌──────────────┐      ┌──────────────┐
+│  Payment     │      │  Inventory   │
+│  Subdomain   │      │  Subdomain   │
+└──────────────┘      └──────────────┘
+```
+
+## When to Use What:
+
+| Scenario | Communication Method | Reason |
+|----------|---------------------|---------|
+| Front-end needs data | REST API | External boundary, synchronous UX |
+| Order created → Payment needed | Domain Event | Async, decoupled subdomains |
+| Order created → Inventory check | Domain Event | Async, decoupled subdomains |
+| Controller → Service (same repo) | Direct call | Same subdomain, same process |
+| Service → Repository (same repo) | Direct call | Same subdomain, same process |
+| Payment success → Order update | Domain Event | Cross-subdomain communication |
+
+---
+
 # Filesystem contract (MANDATORY - no deviations)
 
 **Root MUST be:** `/src/`
@@ -1371,6 +1667,11 @@ Must include:
 13. ✅ MUST implement UnitOfWorkMiddleware to manage transactions automatically
 14. ✅ MUST use domain events with suffix `Event` and pattern `{ObjectName}{EventName}Event`
 15. ✅ MUST abstract queue implementation with IEventPublisher and IEventSubscriber
+16. ✅ MUST use REST/HTTP endpoints ONLY for front-end interactions (NOT for subdomain-to-subdomain)
+17. ✅ MUST use domain events via message queue for ALL subdomain-to-subdomain communication
+18. ✅ MUST follow standard HTTP error response contract (code, message, details, timestamp, path, requestId)
+19. ✅ MUST map ServiceException error codes to appropriate HTTP status codes
+20. ✅ MUST NOT make HTTP calls between backend subdomains or share databases across subdomains
 
 **If you violate any of these rules, you have failed the task.**
 
