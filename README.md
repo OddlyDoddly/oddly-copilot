@@ -26,7 +26,31 @@ Copilot agents are specialized AI assistants that can be configured to handle sp
 
 ## Getting Started
 
-### Creating a New Agent
+### 🚀 The Easy Way: Use the Agent Builder
+
+**Don't want to write any config files yourself?** Use our interactive Agent Builder agent!
+
+The Agent Builder will ask you questions about what you want to create and automatically generate a complete agent definition file for you. No manual file editing required!
+
+**To use:**
+1. Invoke the `@agent-builder` agent
+2. Answer a few simple questions about your desired agent
+3. Get a fully configured agent file automatically created in `.github/agents/`
+
+**Example conversation:**
+```
+You: I want to create an agent that writes Python tests
+Agent Builder: What should we name this agent?
+You: python-test-creator
+Agent Builder: [asks a few more questions...]
+✅ Agent created at .github/agents/python-test-creator.md
+```
+
+See [.github/agents/agent-builder.md](.github/agents/agent-builder.md) for details.
+
+### 📝 The Manual Way: Use Templates
+
+If you prefer to create agents manually:
 
 1. Start with a template from the `templates/` directory
 2. Define your agent's:

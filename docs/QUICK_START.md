@@ -8,7 +8,54 @@ Get started with creating your first Copilot agent in minutes!
 - Familiarity with the domain your agent will work in
 - A clear problem you want your agent to solve
 
-## 5-Minute Agent Creation
+## 🚀 The Zero-Effort Way: Agent Builder (Recommended)
+
+**Don't want to write ANY config files?** Use the Agent Builder agent!
+
+### How it Works (2 minutes total)
+
+1. **Invoke the agent**: `@agent-builder`
+2. **Answer questions**: The agent asks you about what you want to create
+3. **Done**: Your agent is automatically generated and saved!
+
+### Example Conversation
+
+```
+You: @agent-builder I need an agent that creates React test files
+
+Agent Builder: Great! Let me help you create that agent.
+What should we name this agent? (lowercase with hyphens)
+
+You: react-test-creator
+
+Agent Builder: Which category best fits this agent?
+- testing
+- development
+- documentation
+
+You: testing
+
+Agent Builder: What are the 3 most important things this agent should do?
+
+You: 
+1. Create test file structure
+2. Write component rendering tests
+3. Add interaction tests
+
+Agent Builder: [asks a few more questions...]
+
+✅ Agent created at .github/agents/react-test-creator.md
+```
+
+**That's it!** Your agent is ready to use. No manual file editing required.
+
+See [agent-builder.md](../.github/agents/agent-builder.md) for full details.
+
+---
+
+## 📝 The Manual Way: 5-Minute Agent Creation
+
+If you prefer to create agents manually or want to learn the structure:
 
 ### Step 1: Identify Your Need (1 minute)
 

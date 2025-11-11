@@ -27,6 +27,12 @@ A GitHub Copilot agent is a specialized AI assistant configured with:
 
 ### How do I create my first agent?
 
+**The Easy Way (Recommended):**
+1. Use the Agent Builder: `@agent-builder`
+2. Answer the questions it asks
+3. Your agent is automatically created!
+
+**The Manual Way:**
 1. Read the [Quick Start Guide](QUICK_START.md)
 2. Copy a template from `templates/`
 3. Fill in the metadata and instructions
@@ -34,6 +40,10 @@ A GitHub Copilot agent is a specialized AI assistant configured with:
 5. Test it thoroughly
 
 Start simple and iterate!
+
+### Do I have to write config files manually?
+
+**No!** Use the Agent Builder agent (`.github/agents/agent-builder.md`). It will ask you questions and automatically generate a complete agent definition file for you. No manual file editing required!
 
 ### Which template should I use?
 

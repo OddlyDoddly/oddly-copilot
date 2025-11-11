@@ -12,7 +12,25 @@ This directory contains production-ready agent definitions for GitHub Copilot.
 
 ## Adding Agents
 
-To add a new agent to this directory:
+### 🚀 Easy Way: Use the Agent Builder
+
+The easiest way to create a new agent is to use the **Agent Builder** agent in this directory!
+
+```
+@agent-builder
+```
+
+The Agent Builder will:
+- Ask you questions about what you want to create
+- Guide you through the requirements
+- Automatically generate a complete agent definition file
+- Save it in this directory with proper formatting
+
+**No manual file editing required!**
+
+### 📝 Manual Way: Use Templates
+
+To add a new agent manually:
 
 1. **Use a Template**: Start with a template from `../../templates/`
 2. **Follow the Schema**: Ensure your agent follows the schema in `../../docs/AGENT_SCHEMA.md`
