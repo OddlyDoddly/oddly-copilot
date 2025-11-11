@@ -169,6 +169,25 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
    - **WRONG**: `OrderService.cs` and `IOrderService.cs` both in `/application/services/`
    - **CORRECT**: `IOrderService.cs` in `/application/services/`, `OrderService.cs` in `/application/services/impl/`
 
+❌ **Mixing ReadEntities and WriteEntities or putting them in wrong directories**
+   - WriteEntities MUST be in `/infrastructure/persistence/write/`
+   - ReadEntities MUST be in `/infrastructure/persistence/read/`
+   - **WRONG**: `OrderEntity.cs` in `/infrastructure/persistence/`
+   - **CORRECT**: `OrderWriteEntity.cs` in `/infrastructure/persistence/write/`, `OrderReadEntity.cs` in `/infrastructure/persistence/read/`
+
+❌ **Using WriteEntities for queries or ReadEntities for commands**
+   - WriteEntities are ONLY for commands (create, update, delete)
+   - ReadEntities are ONLY for queries (read operations)
+   - **WRONG**: Repository.FindById() returning WriteEntity
+   - **CORRECT**: Query repos return ReadEntity, Command repos work with WriteEntity internally and return BMO
+
+❌ **Not separating Command and Query repositories**
+   - MUST have separate ICommandRepository and IQueryRepository
+   - Command repos work with WriteEntities internally
+   - Query repos return ReadEntities directly
+   - **WRONG**: Single repository with mixed read/write methods
+   - **CORRECT**: Separate CommandRepository and QueryRepository with clear responsibilities
+
 ---
 
 # Architectural rules (MANDATORY)
@@ -202,6 +221,47 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
    - NO business logic allowed
    - Maps Entity ↔ BMO internally
 
+## CQRS Pattern (MANDATORY - Separate Read/Write):
+
+**MUST implement Command-Query Responsibility Segregation:**
+
+### WriteEntity (Commands - Create, Update, Delete):
+- MUST: Live in `/infrastructure/persistence/write/`
+- MUST: Suffix with `WriteEntity`
+- MUST: Used when business logic executes against data
+- MUST: Contains all fields needed for business operations
+- MUST: Updated by Command repositories
+- Purpose: Transactional writes, data consistency, business rules
+
+### ReadEntity (Queries - Read Operations):
+- MUST: Live in `/infrastructure/persistence/read/`
+- MUST: Suffix with `ReadEntity`
+- MUST: Pre-rendered views optimized for front-end consumption
+- MUST: Denormalized for query performance
+- MAY: Aggregate data from multiple WriteEntities
+- MAY: Point to materialized views, read replicas, or separate collections
+- Purpose: Fast queries, optimized for specific UI needs
+
+### Repository Separation:
+- **CommandRepository**: 
+  - Works with WriteEntity internally
+  - Receives BMO from service
+  - Maps BMO → WriteEntity
+  - Returns void or ID after persistence
+  - Handles: Create, Update, Delete operations
+
+- **QueryRepository**: 
+  - Returns ReadEntity directly to service
+  - Service maps ReadEntity → Response DTO
+  - No BMO involvement in read path (optimization)
+  - Handles: Read operations, searches, lists
+
+### Benefits:
+1. **Performance**: Read models optimized independently from write models
+2. **Scalability**: Separate read/write databases possible
+3. **Flexibility**: Different schemas for different purposes
+4. **Front-end Optimization**: ReadEntities pre-rendered for UI needs
+
 ## OBJECT TYPES (MANDATORY strict separation):
 
 **DECISION TREE - Use this for EVERY class you create:**
@@ -216,7 +276,15 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
    → MUST NOT have `[BsonElement]`, `[Column]`, or any ORM attributes
 
 3. **Does this map to a database table/document?** 
-   → `/infrastructure/persistence/` - suffix: Entity
+   → MUST determine if it's for Write or Read operations:
+   - **For Write Operations (Commands)**:
+     → `/infrastructure/persistence/write/` - suffix: WriteEntity
+     → Used when business logic executes against it
+     → Contains all fields for business operations
+   - **For Read Operations (Queries)**:
+     → `/infrastructure/persistence/read/` - suffix: ReadEntity
+     → Pre-rendered views for front-end
+     → Denormalized, optimized for queries
    → MUST have ORM/database attributes
    → MUST NOT have business methods
 
@@ -242,10 +310,21 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
 - **Entities (Persistence Models)**: 
   - MUST: Represent persistence shape ONLY
   - MUST: Live in /infrastructure/persistence/
-  - MUST: Have suffix "Entity"
   - MUST: Have ORM/database attributes
   - MUST NOT: Have business behavior beyond identity/invariants for storage
   - MUST NOT: Have business methods
+  - **TWO TYPES - CQRS Pattern**:
+    - **WriteEntity**: For commands (create, update, delete)
+      - MUST: Have suffix "WriteEntity"
+      - MUST: Used for business logic execution and database writes
+      - MUST: Live in `/infrastructure/persistence/write/`
+      - Contains all fields needed for business operations
+    - **ReadEntity**: For queries (read operations)
+      - MUST: Have suffix "ReadEntity"
+      - MUST: Pre-rendered views optimized for front-end consumption
+      - MUST: Live in `/infrastructure/persistence/read/`
+      - Denormalized, optimized for specific query patterns
+      - May combine data from multiple write entities
 
 - **Mappers**: 
   - MUST: Explicit transformers between DTO ↔ BMO ↔ Entity
@@ -288,6 +367,8 @@ The following are **FORBIDDEN**. If you do any of these, you have failed:
   /infrastructure/
     /repositories/         # DB access via repository interfaces
     /persistence/          # Entities with DB attributes, contexts, migrations
+      /write/              # WriteEntities for commands (business logic execution)
+      /read/               # ReadEntities for queries (pre-rendered views)
     /queues/               # producers/consumers; job schemas
     /integrations/         # external HTTP clients with strict interfaces
     /cache/                # cache client/policies
@@ -385,7 +466,8 @@ export class OrderService implements IOrderService {
 - MUST: Controllers end with: `Controller`
 - MUST: Services end with: `Service`
 - MUST: Repositories end with: `Repository`
-- MUST: Entities (persistence) end with: `Entity`
+- MUST: Write entities (commands) end with: `WriteEntity`
+- MUST: Read entities (queries) end with: `ReadEntity`
 - MUST: Business models end with: `Model` or `BMO`
 - MUST: DTOs end with: `Request` | `Response` | `Dto`
 - MUST: Async functions end with `Async` (e.g., `FindOrderByIdAsync`)
@@ -419,11 +501,11 @@ namespace Domain.Models
     }
 }
 
-// /infrastructure/persistence/ImageEntity.cs - WITH database attributes
-namespace Infrastructure.Persistence
+// /infrastructure/persistence/write/ImageWriteEntity.cs - FOR WRITES (Commands)
+namespace Infrastructure.Persistence.Write
 {
     [BsonCollection("images")]
-    public class ImageEntity 
+    public class ImageWriteEntity 
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -431,6 +513,38 @@ namespace Infrastructure.Persistence
         
         [BsonElement("checksum")]
         public string Checksum { get; set; }
+        
+        [BsonElement("created_at")]
+        public DateTime CreatedAt { get; set; }
+        
+        [BsonElement("updated_at")]
+        public DateTime UpdatedAt { get; set; }
+        
+        // All fields needed for business operations
+    }
+}
+
+// /infrastructure/persistence/read/ImageReadEntity.cs - FOR READS (Queries)
+namespace Infrastructure.Persistence.Read
+{
+    [BsonCollection("images_view")]  // May be a materialized view or separate collection
+    public class ImageReadEntity 
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
+        
+        [BsonElement("checksum")]
+        public string Checksum { get; set; }
+        
+        [BsonElement("url")]
+        public string Url { get; set; }
+        
+        [BsonElement("thumbnail_url")]
+        public string ThumbnailUrl { get; set; }
+        
+        // Pre-rendered/denormalized fields optimized for front-end
+        // May include data from multiple write entities
     }
 }
 
@@ -439,8 +553,12 @@ namespace Application.Mappers
 {
     public class ImageMapper 
     {
-        public ImageModel ToModel(ImageEntity p_entity) { /* ... */ }
-        public ImageEntity ToEntity(ImageModel p_model) { /* ... */ }
+        // Map between BMO and WriteEntity for commands
+        public ImageModel ToModel(ImageWriteEntity p_entity) { /* ... */ }
+        public ImageWriteEntity ToWriteEntity(ImageModel p_model) { /* ... */ }
+        
+        // Map ReadEntity to Response DTO for queries
+        public ImageResponse ToResponse(ImageReadEntity p_entity) { /* ... */ }
     }
 }
 ```
@@ -451,15 +569,35 @@ namespace Application.Mappers
 
 **MUST implement these exact patterns:**
 
-### Entity Pattern:
+### Entity Patterns (CQRS - Separate Read/Write):
+
+#### WriteEntity Pattern:
 ```
-// Persistence-only representation
-// MUST: Live in /infrastructure/persistence/
-// MUST: Have suffix "Entity"
+// For commands (create, update, delete)
+// MUST: Live in /infrastructure/persistence/write/
+// MUST: Have suffix "WriteEntity"
 // MUST NOT: Have business behavior
-abstract class BaseEntity {
+// Used when business logic executes
+abstract class BaseWriteEntity {
   id: Id
   version?: number
+  createdAt: Date
+  updatedAt: Date
+  protected constructor(id) { this.id = id }
+}
+```
+
+#### ReadEntity Pattern:
+```
+// For queries (read operations)
+// MUST: Live in /infrastructure/persistence/read/
+// MUST: Have suffix "ReadEntity"
+// MUST NOT: Have business behavior
+// Pre-rendered views for front-end
+// May be denormalized/aggregated from multiple WriteEntities
+abstract class BaseReadEntity {
+  id: Id
+  // Optimized fields for specific query patterns
   protected constructor(id) { this.id = id }
 }
 ```
@@ -489,26 +627,42 @@ abstract class BaseResponseDto {
 }
 ```
 
-### Repository Pattern:
+### Repository Pattern (CQRS):
 ```
-// MUST: Map Entity ↔ BMO internally
-// MUST: Return BMO to service layer, NOT Entity
-interface IRepository<TModel, TId> {
-  SaveAsync(model: TModel): Promise<TId>
-  FindByIdAsync(id: TId): Promise<TModel|null>  // Returns BMO, not Entity!
-  ListByFilterAsync(filter): Promise<TModel[]>
+// MUST: Separate Command and Query repositories
+// MUST: Command repos work with WriteEntities
+// MUST: Query repos work with ReadEntities
+// MUST: Return BMO to service layer for commands, NOT Entity
+
+// Command Repository (for writes)
+interface ICommandRepository<TModel, TId> {
+  SaveAsync(model: TModel): Promise<TId>           // Maps BMO → WriteEntity
+  UpdateAsync(model: TModel): Promise<void>        // Maps BMO → WriteEntity
+  DeleteAsync(id: TId): Promise<void>              // Works with WriteEntity
+}
+
+// Query Repository (for reads)
+interface IQueryRepository<TId> {
+  FindByIdAsync(id: TId): Promise<ReadEntity|null>  // Returns ReadEntity
+  ListByFilterAsync(filter): Promise<ReadEntity[]>  // Returns ReadEntity[]
+  // These methods return ReadEntity for efficient queries
 }
 ```
 
-### Mapper Pattern (MANDATORY):
+### Mapper Pattern (MANDATORY with Read/Write):
 ```
 // MUST: Explicit transformations
 // MUST: Live in /application/mappers/
-interface IMapper<TDto, TModel, TEntity> {
+interface IMapper<TDto, TModel, TWriteEntity, TReadEntity> {
+  // Command path: Request → Model → WriteEntity
   ToModelFromRequest(dto: TDto): TModel
+  ToWriteEntity(model: TModel): TWriteEntity
+  
+  // Query path: ReadEntity → Response
+  ToResponseFromReadEntity(entity: TReadEntity): BaseResponseDto
+  
+  // Command response: Model → Response (after write)
   ToResponseFromModel(model: TModel): BaseResponseDto
-  ToEntity(model: TModel): TEntity
-  ToModel(entity: TEntity): TModel
 }
 ```
 
@@ -689,29 +843,33 @@ Must include:
 6. Test plan outline
 7. Rollback plan
 
-**RELATIONAL scaffold (MUST follow):**
+**RELATIONAL scaffold with CQRS (MUST follow):**
 ```
 /src/infrastructure/persistence/
   - PostgresDbContext.(cs|ts|py)
   - migrations/
-  - entities/
-    - <Feature>Entity.(cs|ts|py)  # MUST have suffix "Entity"
+  - /write/
+    - <Feature>WriteEntity.(cs|ts|py)  # MUST have suffix "WriteEntity" - for commands
+  - /read/
+    - <Feature>ReadEntity.(cs|ts|py)   # MUST have suffix "ReadEntity" - for queries
 
 /src/domain/models/
-  - <Feature>Model.(cs|ts|py)      # MUST have suffix "Model", NO DB attributes
+  - <Feature>Model.(cs|ts|py)          # MUST have suffix "Model", NO DB attributes
 
 /src/application/mappers/
-  - <Feature>Mapper.(cs|ts|py)     # MANDATORY - never skip
+  - <Feature>Mapper.(cs|ts|py)         # MANDATORY - maps between all types
 
 /src/application/services/
-  - I<Feature>Service.(cs|ts|py)   # Interface in parent directory
+  - I<Feature>Service.(cs|ts|py)       # Interface in parent directory
   - /impl/
-    - <Feature>Service.(cs|ts|py)  # Implementation in /impl subdirectory
+    - <Feature>Service.(cs|ts|py)      # Implementation in /impl subdirectory
 
 /src/infrastructure/repositories/
-  - I<Feature>Repository.(cs|ts|py)  # Interface in parent directory
+  - I<Feature>CommandRepository.(cs|ts|py)  # Command repo interface
+  - I<Feature>QueryRepository.(cs|ts|py)    # Query repo interface
   - /impl/
-    - <Feature>Repository.(cs|ts|py)  # Implementation in /impl subdirectory
+    - <Feature>CommandRepository.(cs|ts|py) # Works with WriteEntity
+    - <Feature>QueryRepository.(cs|ts|py)   # Returns ReadEntity
 
 /src/api/dto/v1/
   - <Feature>Request.(cs|ts|py)
@@ -721,17 +879,20 @@ Must include:
   - <Feature>Controller.(cs|ts|py)
 ```
 
-**DOCUMENT scaffold (MUST follow):**
+**DOCUMENT scaffold with CQRS (MUST follow):**
 ```
 /src/infrastructure/persistence/
   - MongoDbContext.(cs|ts|py)
-  - entities/
-    - <Feature>Entity.(cs|ts|py)  # MUST have [BsonElement] attributes
+  - /write/
+    - <Feature>WriteEntity.(cs|ts|py)  # MUST have [BsonElement] attributes - for commands
+  - /read/
+    - <Feature>ReadEntity.(cs|ts|py)   # MUST have [BsonElement] attributes - for queries
+                                        # May reference different collection/view
 
 /src/domain/models/
-  - <Feature>Model.(cs|ts|py)      # NO [BsonElement] attributes
+  - <Feature>Model.(cs|ts|py)          # NO [BsonElement] attributes
 
-[Rest same as relational]
+[Rest same as relational CQRS]
 ```
 
 ---
@@ -743,11 +904,14 @@ Must include:
 1. ✅ MUST separate BMOs (domain) from Entities (persistence)
 2. ✅ MUST create Mappers for all transformations
 3. ✅ MUST NOT put database attributes in /domain/models/
-4. ✅ MUST use Entity suffix for persistence classes
-5. ✅ MUST use Model suffix for domain classes
-6. ✅ MUST follow the exact filesystem structure
-7. ✅ MUST prioritize these custom standards over C#/Java/framework conventions
-8. ✅ MUST separate interfaces from implementations (interfaces in parent, implementations in /impl)
+4. ✅ MUST separate WriteEntities (commands) from ReadEntities (queries)
+5. ✅ MUST use WriteEntity suffix for command entities in /persistence/write/
+6. ✅ MUST use ReadEntity suffix for query entities in /persistence/read/
+7. ✅ MUST use Model suffix for domain classes
+8. ✅ MUST follow the exact filesystem structure
+9. ✅ MUST prioritize these custom standards over C#/Java/framework conventions
+10. ✅ MUST separate interfaces from implementations (interfaces in parent, implementations in /impl)
+11. ✅ MUST separate Command and Query repositories (ICommandRepository vs IQueryRepository)
 
 **If you violate any of these rules, you have failed the task.**
 
