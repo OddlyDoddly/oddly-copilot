@@ -1,7 +1,7 @@
 ---
-name: oddly-ddd-rest-v2.2.0
+name: oddly-ddd-rest-v2.3.0
 id: agent-ddd-rest-0a7f72f9
-version: 2.2.0
+version: 2.3.0
 description: >
   Build REST backends using DDD + MVC with MANDATORY separation of layers and object types.
   These are REQUIREMENTS, not suggestions. Custom standards override ALL language conventions.
@@ -59,9 +59,82 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 
 **IF YOU COMMIT BINARIES/BUILD ARTIFACTS, YOU HAVE FAILED**
 
+## 🚨 STEP 0.5: Copy Pre-Approved Infrastructure (BEFORE ANY CODE) 🚨
+
+**MANDATORY: COPY INFRASTRUCTURE BEFORE WRITING CODE**
+
+When creating a NEW project, you MUST copy the pre-approved infrastructure from the oddly-infrastructures repository as the starting base. This ensures every implementation starts with consistent, production-ready infrastructure patterns.
+
+**Process:**
+
+1. **Detect Language**: Determine the target language for the project (C#, Java, Python, or TypeScript)
+   
+2. **Clone Infrastructure Repository**:
+   ```bash
+   git clone https://github.com/OddlyDoddly/oddly-infrastructures.git /tmp/oddly-infrastructures
+   ```
+
+3. **Copy Language-Specific Infrastructure**:
+   - **C#**: Copy from `/tmp/oddly-infrastructures/infrastructures/ddd/CSharp/`
+   - **Java**: Copy from `/tmp/oddly-infrastructures/infrastructures/ddd/Java/`
+   - **Python**: Copy from `/tmp/oddly-infrastructures/infrastructures/ddd/Python/`
+   - **TypeScript**: Copy from `/tmp/oddly-infrastructures/infrastructures/ddd/TypeScript/`
+
+4. **Copy to Project Root**:
+   ```bash
+   # Example for C#
+   cp -r /tmp/oddly-infrastructures/infrastructures/ddd/CSharp/* ./
+   
+   # Example for TypeScript
+   cp -r /tmp/oddly-infrastructures/infrastructures/ddd/TypeScript/* ./
+   ```
+
+5. **Verify Infrastructure Copied**:
+   - Base classes and abstractions should now exist
+   - Middleware implementations should be present
+   - Configuration files should be in place
+
+**This infrastructure includes:**
+- Base classes (BaseEntity, BaseModel, BaseRepository, etc.)
+- Middleware implementations (UnitOfWork, Ownership, etc.)
+- Standard exceptions and error handling
+- Configuration templates
+- Testing infrastructure
+- Build and deployment scripts
+
+**CRITICAL RULES:**
+
+- **MUST** copy infrastructure BEFORE generating any code
+- **MUST** use the copied infrastructure as the foundation
+- **MUST NOT** regenerate infrastructure that already exists in the copied base
+- **MUST** extend and customize the copied infrastructure, not replace it
+- **MUST** verify infrastructure is present before proceeding
+
+**Example Workflow:**
+
+```bash
+# 1. Detect language (e.g., C#)
+# 2. Clone infrastructure repo
+git clone https://github.com/OddlyDoddly/oddly-infrastructures.git /tmp/oddly-infrastructures
+
+# 3. Copy C# infrastructure
+cp -r /tmp/oddly-infrastructures/infrastructures/ddd/CSharp/* ./
+
+# 4. Verify base files exist
+ls -la ./src/infrastructure/persistence/infra/BaseEntity.cs
+ls -la ./src/api/middleware/UnitOfWorkMiddleware.cs
+
+# 5. Now proceed with feature-specific code generation
+```
+
+**IF YOU SKIP THIS STEP, YOU HAVE FAILED**
+
 ## Pre-flight Checklist (MANDATORY before coding)
 
 - [ ] .gitignore exists with all patterns above
+- [ ] Pre-approved infrastructure copied from oddly-infrastructures repository (for NEW projects)
+- [ ] Base infrastructure files verified present (BaseEntity, BaseRepository, middleware, etc.)
+- [ ] I understand: Use copied infrastructure as foundation, do NOT regenerate it
 - [ ] I understand: BMOs in /domain/models/ MUST NOT have database attributes
 - [ ] I understand: Entities in /infrastructure/persistence/ MUST end with "Entity" suffix
 - [ ] I understand: WriteEntities (commands) vs ReadEntities (queries) separation
@@ -81,6 +154,9 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 
 **FORBIDDEN - If you do any of these, you have failed:**
 
+❌ **Skipping infrastructure copy step** - NEW projects MUST start with pre-approved infrastructure from oddly-infrastructures
+❌ **Regenerating infrastructure that exists in copied base** - Use what's provided, don't recreate
+❌ **Starting new project without cloning oddly-infrastructures** - Foundation MUST come from approved repo
 ❌ **Database attributes on /domain/models/ classes** - Domain models MUST be pure business logic
 ❌ **Returning Entity from Repository to Service** - Repositories MUST map Entity → BMO
 ❌ **Skipping Mapper layer** - ALL transformations require explicit mappers
@@ -263,112 +339,28 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 - **Date/Time fields (MANDATORY)**: MUST include `Utc` suffix for ALL date/time columns and properties (e.g., `CreatedAtUtc`, `UpdatedAtUtc`, `ScheduledTimeUtc`)
 - **Variables with units of measurement (MANDATORY)**: MUST include the unit in the variable name (e.g., `DurationSeconds`, `DurationMinutes`, `LengthMiles`, `LengthCentimeters`, `LengthKilometers`, `WeightKilograms`, `TemperatureCelsius`)
 
-**Example:**
+**Example patterns (use copied infrastructure for full implementations):**
 ```csharp
-// /domain/models/{Feature}Model.cs - NO DB attributes
-public class {Feature}Model {
-    private string _id;
-    public void ValidateBusinessRule(string p_param) { }
-}
+// Domain: NO DB attributes
+public class {Feature}Model { private string _id; }
 
-// /infrastructure/persistence/write/{Feature}WriteEntity.cs - Commands
+// WriteEntity: Commands with ORM
 [BsonCollection("{features}")]
-public class {Feature}WriteEntity {
-    [BsonId] public string Id { get; set; }
-    [BsonElement("field")] public string Field { get; set; }
-}
+public class {Feature}WriteEntity { [BsonId] public string Id; }
 
-// /infrastructure/persistence/read/{Feature}ReadEntity.cs - Queries
+// ReadEntity: Queries with ORM
 [BsonCollection("{features}_view")]
-public class {Feature}ReadEntity {
-    [BsonId] public string Id { get; set; }
-    [BsonElement("field")] public string Field { get; set; }
-    [BsonElement("computed_field")] public string ComputedField { get; set; }
-}
+public class {Feature}ReadEntity { [BsonId] public string Id; }
 
-// /application/mappers/infra/IMapper.cs - Infrastructure abstraction
-public interface IMapper<TDto, TModel, TWriteEntity, TReadEntity> {
-    TModel ToModel(TWriteEntity p_entity);
-    TWriteEntity ToWriteEntity(TModel p_model);
-    TDto ToResponse(TReadEntity p_entity);
-}
+// Mappers: In root (no /impl/)
+public class {Feature}Mapper : IMapper<...> { }
 
-// /application/mappers/{Feature}Mapper.cs - Implementation in root (no /impl/)
-public class {Feature}Mapper : IMapper<{Feature}Response, {Feature}Model, {Feature}WriteEntity, {Feature}ReadEntity> {
-    public {Feature}Model ToModel({Feature}WriteEntity p_entity) { }
-    public {Feature}WriteEntity ToWriteEntity({Feature}Model p_model) { }
-    public {Feature}Response ToResponse({Feature}ReadEntity p_entity) { }
-}
+// Controllers: In root (no /impl/)
+public class {Feature}Controller : BaseController { }
 
-// /api/dto/infra/BaseRequest.cs - Infrastructure abstraction
-public abstract class BaseRequest {
-    public string RequestId { get; set; }
-}
-
-// /api/dto/infra/BaseResponse.cs - Infrastructure abstraction
-public abstract class BaseResponse {
-    public string RequestId { get; set; }
-    public DateTime Timestamp { get; set; }
-}
-
-// /api/dto/requests/Create{Feature}Request.cs - Request in /requests/ folder
-public class Create{Feature}Request : BaseRequest {
-    public string Name { get; set; }
-    public string Description { get; set; }
-}
-
-// /api/dto/responses/{Feature}Response.cs - Response in /responses/ folder
-public class {Feature}Response : BaseResponse {
-    public string Id { get; set; }
-    public string Name { get; set; }
-}
-
-// /api/controllers/infra/BaseController.cs - Infrastructure abstraction
-public abstract class BaseController {
-    protected void ValidateRequest(BaseRequest p_request) { }
-}
-
-// /api/controllers/{Feature}Controller.cs - Controller in root (no /impl/)
-public class {Feature}Controller : BaseController {
-    public async Task<{Feature}Response> CreateAsync(Create{Feature}Request p_request) { }
-}
-
-// /infrastructure/queues/infra/IEventPublisher.cs - Infrastructure abstraction
-public interface IEventPublisher {
-    Task PublishAsync<TEvent>(TEvent p_event) where TEvent : class;
-}
-
-// /infrastructure/queues/EventBus.cs - Queue implementation in root (no /impl/)
-public class EventBus : IEventPublisher {
-    public async Task PublishAsync<TEvent>(TEvent p_event) where TEvent : class { }
-}
-
-// /application/errors/infra/ServiceException.cs - Infrastructure abstraction
-public abstract class ServiceException : Exception {
-    public abstract Enum ErrorCode { get; }
-}
-
-// /domain/models/infra/BaseModel.cs - Infrastructure abstraction
-public abstract class BaseModel {
-    protected string _id;
-    public string Id => _id;
-}
-
-// /infrastructure/persistence/infra/BaseEntity.cs - Infrastructure abstraction
-public abstract class BaseEntity {
-    public string Id { get; set; }
-    public DateTime CreatedAtUtc { get; set; }  // MUST include Utc suffix
-    public DateTime UpdatedAtUtc { get; set; }  // MUST include Utc suffix
-}
-
-// /infrastructure/persistence/write/infra/BaseWriteEntity.cs - Infrastructure abstraction
-public abstract class BaseWriteEntity : BaseEntity {
-    public int Version { get; set; }
-}
-
-// /infrastructure/persistence/read/infra/BaseReadEntity.cs - Infrastructure abstraction
-public abstract class BaseReadEntity : BaseEntity {
-    // Optimized for queries
+// Base classes: In /infra/
+public abstract class BaseEntity { 
+    public DateTime CreatedAtUtc; // MUST include Utc suffix
 }
 ```
 
@@ -451,156 +443,37 @@ class EventWriteEntity {
 
 # Middleware Patterns (MANDATORY)
 
-**MUST apply in this order:**
-1. Correlation ID → 2. Logging → 3. Authentication → 4. Authorization/Ownership → 5. UnitOfWork → 6. Controller → 7. UnitOfWork commit/rollback → 8. Error Handling
+**Order:** Correlation ID → Logging → Auth → Authorization/Ownership → UnitOfWork → Controller → UnitOfWork commit/rollback → Error Handling
 
-## 1. Ownership Middleware (MANDATORY):
-```typescript
-// /api/middleware/OwnershipMiddleware.ts
-export class OwnershipMiddleware {
-  async execute(request: Request, next: Next) {
-    const userId = extractUserId(request);
-    const resourceId = request.params.id;
-    
-    if (await isPublicResource(resourceId)) return next();
-    if (!await verifyOwnership(userId, resourceId)) 
-      throw new ForbiddenException('Access denied');
-    
-    return next();
-  }
-}
-```
+**OwnershipMiddleware**: Verify user owns resource. Throw ForbiddenException if not.
 
-## 2. UnitOfWork Middleware (MANDATORY):
-```typescript
-// /api/middleware/UnitOfWorkMiddleware.ts
-export class UnitOfWorkMiddleware {
-  async execute(request: Request, response: Response, next: Next) {
-    try {
-      await this._unitOfWork.beginTransaction();
-      await next();
-      
-      if (response.statusCode < 400) {
-        await this._unitOfWork.commit();
-      } else {
-        await this._unitOfWork.rollback();
-      }
-    } catch (error) {
-      await this._unitOfWork.rollback();
-      throw error;
-    }
-  }
-}
-```
+**UnitOfWorkMiddleware**: Begin transaction before controller, commit on success (status < 400), rollback on error or failure.
 
-**UnitOfWork Interface:**
-```typescript
-export interface IUnitOfWork {
-  beginTransaction(): Promise<void>;
-  commit(): Promise<void>;
-  rollback(): Promise<void>;
-  saveChanges(): Promise<void>;
-}
-```
+**IUnitOfWork Interface**: `beginTransaction()`, `commit()`, `rollback()`, `saveChanges()`
+
+(Use copied infrastructure for full implementations)
 
 ---
 
 # Domain Events & Queue (MANDATORY)
 
-## Domain Event Rules:
-- MUST: Suffix with `Event`, pattern: `{Object}{Action}Event`
-- MUST: Be immutable (readonly fields)
-- MUST: Live in `/domain/events/`
-- MUST: Include timestamp, correlationId
+**Event Rules:** Suffix `Event`, pattern `{Object}{Action}Event`, immutable (readonly), in `/domain/events/`, include timestamp/correlationId
 
-**Pattern:**
-```typescript
-// /domain/events/{Object}CreatedEvent.ts
-export class {Object}CreatedEvent {
-  readonly eventId: string;
-  readonly objectId: string;
-  readonly timestamp: Date;
-  readonly correlationId: string;
-  
-  constructor(data: {Object}CreatedEventData) {
-    this.eventId = generateId();
-    this.objectId = data.objectId;
-    this.timestamp = new Date();
-    this.correlationId = data.correlationId;
-    Object.freeze(this);
-  }
-}
-```
+**Queue:** IEventPublisher/IEventSubscriber in `/infrastructure/queues/infra/`, topic naming: `{subdomain}.{action}`
 
-## Queue Abstraction:
-```typescript
-// /infrastructure/queues/
-export interface IEventPublisher {
-  publish<TEvent>(event: TEvent, topic: string): Promise<void>;
-}
-
-export interface IEventSubscriber {
-  subscribe<TEvent>(topic: string, handler: (event: TEvent) => Promise<void>): Promise<void>;
-}
-```
-
-**Topic Naming:** `{subdomain}.{action}` (e.g., `{subdomain}.created`, `{subdomain}.processed`)
+(Use copied infrastructure for implementations)
 
 ---
 
 # Service Exception Policy (MANDATORY)
 
-**ALL exceptions MUST follow this pattern:**
-- Pattern: `{Object}ServiceException`
-- Define: `{Object}ErrorCode` enum (NOT strings)
-- Inherit: `ServiceException<TErrorCode>`
-- Location: `/application/errors/` (NOT /services/)
+**Pattern:** `{Object}ServiceException` inheriting `ServiceException<TErrorCode>` in `/application/errors/`
 
-**Base Template:**
-```csharp
-namespace Application.Errors
-{
-    public abstract class ServiceException : Exception {
-        public abstract Enum GenericErrorCode { get; }
-        public abstract Type ErrorCodeType { get; }
-    }
-
-    public abstract class ServiceException<TErrorCode> : ServiceException
-        where TErrorCode : Enum
-    {
-        public readonly TErrorCode ErrorCode;
-        public readonly IReadOnlyDictionary<string, object>? Details;
-        
-        protected ServiceException(
-            TErrorCode p_code,
-            IReadOnlyDictionary<string, string> p_messageTemplates,
-            IReadOnlyDictionary<string, object>? p_details = null
-        ) : base(FormatMessage(p_code, p_messageTemplates, p_details), ...) {
-            ErrorCode = p_code;
-            Details = p_details;
-        }
-    }
-}
-```
-
-**Usage:**
-```csharp
-// /application/errors/{Feature}ServiceException.cs
-public enum {Feature}ErrorCode { NotFound, ValidationFailed, Conflict }
-
-public class {Feature}ServiceException : ServiceException<{Feature}ErrorCode> {
-    private static readonly IReadOnlyDictionary<string, string> _messageTemplates = 
-        new Dictionary<string, string> {
-            { nameof({Feature}ErrorCode.NotFound), "{Feature} '{id}' not found" },
-            { nameof({Feature}ErrorCode.ValidationFailed), "Validation failed: {reason}" }
-        };
-    
-    public {Feature}ServiceException(
-        {Feature}ErrorCode p_code, 
-        IReadOnlyDictionary<string, object>? p_details = null
-    ) : base(p_code, _messageTemplates, p_details) { }
-}
-```
+**Requirements:**
+- Define `{Object}ErrorCode` enum (NOT strings)
+- Include message templates dictionary
+- Store ErrorCode and optional Details
+- Use copied infrastructure for ServiceException base class
 
 ---
 
@@ -747,35 +620,38 @@ Front-End → REST API (per subdomain)
 
 **THESE ARE REQUIREMENTS, NOT SUGGESTIONS:**
 
-1. ✅ MUST separate BMOs (domain) from Entities (persistence)
-2. ✅ MUST create Mappers for all transformations
-3. ✅ MUST NOT put database attributes in /domain/models/
-4. ✅ MUST separate WriteEntities (commands) from ReadEntities (queries)
-5. ✅ MUST use WriteEntity suffix in /persistence/write/
-6. ✅ MUST use ReadEntity suffix in /persistence/read/
-7. ✅ MUST use Model suffix for domain classes
-8. ✅ MUST follow exact filesystem structure
-9. ✅ MUST prioritize custom standards over framework conventions
-10. ✅ MUST separate service/repository interfaces from implementations (/impl subdirectory)
-11. ✅ MUST keep implementations in root for objects WITHOUT contracts (Mappers, Queues, Controllers, DTOs)
-12. ✅ MUST create /infra/ subdirectory in EVERY folder for base classes and abstractions
-13. ✅ MUST put ServiceException in /application/errors/infra/ subdirectory
-14. ✅ MUST separate DTOs into /requests/ and /responses/ folders
-15. ✅ MUST put BaseRequest and BaseResponse in /api/dto/infra/
-16. ✅ MUST put IEventPublisher and IEventSubscriber in /infrastructure/queues/infra/
-17. ✅ MUST separate Command and Query repositories
-18. ✅ MUST implement OwnershipMiddleware
-19. ✅ MUST implement UnitOfWorkMiddleware
-20. ✅ MUST use domain events with `{Object}{Action}Event` pattern
-21. ✅ MUST abstract queue with IEventPublisher/IEventSubscriber in /infra/
-22. ✅ MUST use REST ONLY for front-end (NOT subdomain-to-subdomain)
-23. ✅ MUST use domain events for ALL subdomain-to-subdomain communication
-24. ✅ MUST follow standard HTTP error response contract
-25. ✅ MUST map ServiceException codes to HTTP status codes
-26. ✅ MUST NOT make HTTP calls between subdomains or share databases
-27. ✅ MUST include `Utc` suffix in ALL date/time field names (e.g., `createdAtUtc`, `scheduledTimeUtc`)
-28. ✅ MUST store ALL timestamps in UTC in the database
-29. ✅ MUST include units in variable names for all measurements (e.g., `durationSeconds`, `lengthMeters`, `weightKilograms`)
-30. ✅ MUST accept date/time inputs with timezone information and convert to UTC
+1. ✅ MUST copy pre-approved infrastructure from oddly-infrastructures repository for NEW projects
+2. ✅ MUST verify infrastructure is present before generating feature code
+3. ✅ MUST use copied infrastructure as foundation, NOT regenerate it
+4. ✅ MUST separate BMOs (domain) from Entities (persistence)
+5. ✅ MUST create Mappers for all transformations
+6. ✅ MUST NOT put database attributes in /domain/models/
+7. ✅ MUST separate WriteEntities (commands) from ReadEntities (queries)
+8. ✅ MUST use WriteEntity suffix in /persistence/write/
+9. ✅ MUST use ReadEntity suffix in /persistence/read/
+10. ✅ MUST use Model suffix for domain classes
+11. ✅ MUST follow exact filesystem structure
+12. ✅ MUST prioritize custom standards over framework conventions
+13. ✅ MUST separate service/repository interfaces from implementations (/impl subdirectory)
+14. ✅ MUST keep implementations in root for objects WITHOUT contracts (Mappers, Queues, Controllers, DTOs)
+15. ✅ MUST create /infra/ subdirectory in EVERY folder for base classes and abstractions
+16. ✅ MUST put ServiceException in /application/errors/infra/ subdirectory
+17. ✅ MUST separate DTOs into /requests/ and /responses/ folders
+18. ✅ MUST put BaseRequest and BaseResponse in /api/dto/infra/
+19. ✅ MUST put IEventPublisher and IEventSubscriber in /infrastructure/queues/infra/
+20. ✅ MUST separate Command and Query repositories
+21. ✅ MUST implement OwnershipMiddleware
+22. ✅ MUST implement UnitOfWorkMiddleware
+23. ✅ MUST use domain events with `{Object}{Action}Event` pattern
+24. ✅ MUST abstract queue with IEventPublisher/IEventSubscriber in /infra/
+25. ✅ MUST use REST ONLY for front-end (NOT subdomain-to-subdomain)
+26. ✅ MUST use domain events for ALL subdomain-to-subdomain communication
+27. ✅ MUST follow standard HTTP error response contract
+28. ✅ MUST map ServiceException codes to HTTP status codes
+29. ✅ MUST NOT make HTTP calls between subdomains or share databases
+30. ✅ MUST include `Utc` suffix in ALL date/time field names (e.g., `createdAtUtc`, `scheduledTimeUtc`)
+31. ✅ MUST store ALL timestamps in UTC in the database
+32. ✅ MUST include units in variable names for all measurements (e.g., `durationSeconds`, `lengthMeters`, `weightKilograms`)
+33. ✅ MUST accept date/time inputs with timezone information and convert to UTC
 
 **If you violate any of these rules, you have failed the task.**

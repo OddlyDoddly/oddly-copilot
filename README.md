@@ -119,12 +119,13 @@ An interactive agent that guides you through creating new GitHub Copilot agent d
 ### DDD REST Backend Agent
 **ID**: `agent-ddd-rest-0a7f72f9`  
 **Category**: Development  
-**Version**: 2.2.0  
+**Version**: 2.3.0  
 **Status**: Active
 
-Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller (MVC) architecture. Enforces mandatory separation of layers and strict architectural patterns with zero deviation allowed. Includes strict requirements for UTC timezone handling and units in variable names.
+Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller (MVC) architecture. Enforces mandatory separation of layers and strict architectural patterns with zero deviation allowed. Includes strict requirements for UTC timezone handling and units in variable names. Automatically copies pre-approved infrastructure from oddly-infrastructures repository as starting base.
 
 **Key Capabilities:**
+- Copy pre-approved infrastructure from oddly-infrastructures repository for new projects
 - Generate services following DDD + MVC architecture
 - Enforce strict layer separation (Domain, Application, Infrastructure)
 - Implement repository patterns with proper abstraction
