@@ -183,8 +183,8 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 **Namespace MUST follow folder structure.**
 
 ## Interface/Implementation Separation:
-- Interfaces: Main directory (e.g., `/application/services/IOrderService`)
-- Implementations: `/impl/` subdirectory (e.g., `/application/services/impl/OrderService`)
+- Interfaces: Main directory (e.g., `/application/services/I<Feature>Service`)
+- Implementations: `/impl/` subdirectory (e.g., `/application/services/impl/<Feature>Service`)
 - MUST: Interface names start with `I`
 
 ---
@@ -198,7 +198,7 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 - Read entities: `ReadEntity` suffix in /persistence/read/
 - Business models: `Model` or `BMO` suffix
 - DTOs: `Request`|`Response`|`Dto` suffix
-- Domain events: `Event` suffix, pattern: `{Object}{Action}Event` (e.g., `OrderCreatedEvent`)
+- Domain events: `Event` suffix, pattern: `{Object}{Action}Event` (e.g., `<Object>CreatedEvent`)
 - Middleware: `Middleware` suffix
 - Async functions: `Async` suffix
 - Member fields: `_variable` (underscore prefix) or `m_variable` (if underscore disallowed)
@@ -207,32 +207,32 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 
 **Example:**
 ```csharp
-// /domain/models/ImageModel.cs - NO DB attributes
-public class ImageModel {
+// /domain/models/<Feature>Model.cs - NO DB attributes
+public class <Feature>Model {
     private string _id;
-    public void ValidateChecksum(string p_checksum) { }
+    public void ValidateBusinessRule(string p_param) { }
 }
 
-// /infrastructure/persistence/write/ImageWriteEntity.cs - Commands
-[BsonCollection("images")]
-public class ImageWriteEntity {
+// /infrastructure/persistence/write/<Feature>WriteEntity.cs - Commands
+[BsonCollection("<features>")]
+public class <Feature>WriteEntity {
     [BsonId] public string Id { get; set; }
-    [BsonElement("checksum")] public string Checksum { get; set; }
+    [BsonElement("field")] public string Field { get; set; }
 }
 
-// /infrastructure/persistence/read/ImageReadEntity.cs - Queries
-[BsonCollection("images_view")]
-public class ImageReadEntity {
+// /infrastructure/persistence/read/<Feature>ReadEntity.cs - Queries
+[BsonCollection("<features>_view")]
+public class <Feature>ReadEntity {
     [BsonId] public string Id { get; set; }
-    [BsonElement("url")] public string Url { get; set; }
-    [BsonElement("thumbnail_url")] public string ThumbnailUrl { get; set; }
+    [BsonElement("field")] public string Field { get; set; }
+    [BsonElement("computed_field")] public string ComputedField { get; set; }
 }
 
-// /application/mappers/ImageMapper.cs
-public class ImageMapper {
-    public ImageModel ToModel(ImageWriteEntity p_entity) { }
-    public ImageWriteEntity ToWriteEntity(ImageModel p_model) { }
-    public ImageResponse ToResponse(ImageReadEntity p_entity) { }
+// /application/mappers/<Feature>Mapper.cs
+public class <Feature>Mapper {
+    public <Feature>Model ToModel(<Feature>WriteEntity p_entity) { }
+    public <Feature>WriteEntity ToWriteEntity(<Feature>Model p_model) { }
+    public <Feature>Response ToResponse(<Feature>ReadEntity p_entity) { }
 }
 ```
 
@@ -352,16 +352,16 @@ export interface IUnitOfWork {
 
 **Pattern:**
 ```typescript
-// /domain/events/OrderCreatedEvent.ts
-export class OrderCreatedEvent {
+// /domain/events/<Object>CreatedEvent.ts
+export class <Object>CreatedEvent {
   readonly eventId: string;
-  readonly orderId: string;
+  readonly objectId: string;
   readonly timestamp: Date;
   readonly correlationId: string;
   
-  constructor(data: OrderCreatedEventData) {
+  constructor(data: <Object>CreatedEventData) {
     this.eventId = generateId();
-    this.orderId = data.orderId;
+    this.objectId = data.objectId;
     this.timestamp = new Date();
     this.correlationId = data.correlationId;
     Object.freeze(this);
@@ -381,7 +381,7 @@ export interface IEventSubscriber {
 }
 ```
 
-**Topic Naming:** `{subdomain}.{action}` (e.g., `order.created`, `payment.processed`)
+**Topic Naming:** `{subdomain}.{action}` (e.g., `<subdomain>.created`, `<subdomain>.processed`)
 
 ---
 
@@ -422,18 +422,18 @@ namespace Application.Errors
 
 **Usage:**
 ```csharp
-// /application/errors/ImageServiceException.cs
-public enum ImageErrorCode { NotFound, ValidationFailed, Conflict }
+// /application/errors/<Feature>ServiceException.cs
+public enum <Feature>ErrorCode { NotFound, ValidationFailed, Conflict }
 
-public class ImageServiceException : ServiceException<ImageErrorCode> {
+public class <Feature>ServiceException : ServiceException<<Feature>ErrorCode> {
     private static readonly IReadOnlyDictionary<string, string> _messageTemplates = 
         new Dictionary<string, string> {
-            { nameof(ImageErrorCode.NotFound), "Image '{id}' not found" },
-            { nameof(ImageErrorCode.ValidationFailed), "Validation failed: {reason}" }
+            { nameof(<Feature>ErrorCode.NotFound), "<Feature> '{id}' not found" },
+            { nameof(<Feature>ErrorCode.ValidationFailed), "Validation failed: {reason}" }
         };
     
-    public ImageServiceException(
-        ImageErrorCode p_code, 
+    public <Feature>ServiceException(
+        <Feature>ErrorCode p_code, 
         IReadOnlyDictionary<string, object>? p_details = null
     ) : base(p_code, _messageTemplates, p_details) { }
 }
@@ -487,25 +487,25 @@ interface ErrorResponse {
 
 **Pattern:**
 ```typescript
-// Order Service (Publisher)
-class OrderService {
-  async createOrder(p_order: OrderModel): Promise<string> {
-    const orderId = await this._commandRepo.CreateAsync(p_order);
+// Subdomain A Service (Publisher)
+class <Feature>Service {
+  async create<Feature>(p_object: <Feature>Model): Promise<string> {
+    const objectId = await this._commandRepo.CreateAsync(p_object);
     
     await this._eventPublisher.Publish(
-      new OrderCreatedEvent({ orderId, ... })
+      new <Object>CreatedEvent({ objectId, ... })
     );
     
-    return orderId;
+    return objectId;
   }
 }
 
-// Payment Service (Subscriber - different repo)
-class PaymentEventHandler implements IEventSubscriber<OrderCreatedEvent> {
-  async handle(p_event: OrderCreatedEvent): Promise<void> {
-    await this._paymentService.ProcessPaymentAsync({
-      orderId: p_event.orderId,
-      amount: p_event.totalAmount
+// Subdomain B Service (Subscriber - different repo)
+class <Related>EventHandler implements IEventSubscriber<<Object>CreatedEvent> {
+  async handle(p_event: <Object>CreatedEvent): Promise<void> {
+    await this._relatedService.ProcessAsync({
+      objectId: p_event.objectId,
+      data: p_event.data
     });
   }
 }
