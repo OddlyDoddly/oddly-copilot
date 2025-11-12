@@ -92,10 +92,10 @@ This is a catalog of all available agents in this repository. Each agent has a u
 ### Agent Builder
 **ID**: `agent-agent-builder-37bb1763`  
 **Category**: Development  
-**Version**: 2.3.0  
+**Version**: 2.4.0  
 **Status**: Active
 
-An interactive agent that guides you through creating new GitHub Copilot agent definitions by asking questions and generating complete configuration files automatically. This agent also maintains standardized documentation for all agents in the repository.
+An interactive agent that guides you through creating new GitHub Copilot agent definitions by asking questions and generating complete configuration files automatically. This agent also maintains standardized documentation for all agents in the repository and enforces universal standards for units of measurement and UTC timezone handling.
 
 **Key Capabilities:**
 - Interactive guided agent creation through conversation
@@ -104,6 +104,7 @@ An interactive agent that guides you through creating new GitHub Copilot agent d
 - Automatically generates and updates agent documentation in README.md
 - Ensures all generated agents include Anti-Patterns, Pre-flight Checklists, and Final Reminders
 - Versions every agent (1.0.0 for new) and increments version on updates
+- Enforces universal standards: units in variable names, UTC timezone for date/time fields
 
 **Use When:**
 - Creating a new agent definition from scratch
@@ -118,16 +119,18 @@ An interactive agent that guides you through creating new GitHub Copilot agent d
 ### DDD REST Backend Agent
 **ID**: `agent-ddd-rest-0a7f72f9`  
 **Category**: Development  
-**Version**: 2.1.1  
+**Version**: 2.2.0  
 **Status**: Active
 
-Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller (MVC) architecture. Enforces mandatory separation of layers and strict architectural patterns with zero deviation allowed.
+Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller (MVC) architecture. Enforces mandatory separation of layers and strict architectural patterns with zero deviation allowed. Includes strict requirements for UTC timezone handling and units in variable names.
 
 **Key Capabilities:**
 - Generate services following DDD + MVC architecture
 - Enforce strict layer separation (Domain, Application, Infrastructure)
 - Implement repository patterns with proper abstraction
 - Apply custom standards that override language/framework conventions
+- Require UTC timezone storage and Utc suffix for all date/time fields
+- Enforce units of measurement in variable names (e.g., durationSeconds, lengthMeters)
 
 **Use When:**
 - Building new REST API backends
