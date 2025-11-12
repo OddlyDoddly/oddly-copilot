@@ -140,7 +140,7 @@ Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller 
 - Working with TypeScript/Node.js, C#, or Java backend services
 - Require Domain-Driven Design patterns
 
-**Path**: `.github/agents/infrastructures/ddd/ddd-rest.agent.md`
+**Path**: `.github/agents/infrastructures/ddd/oddly-ddd-rest-v2.3.0.md`
 
 ---
 
