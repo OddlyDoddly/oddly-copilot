@@ -139,6 +139,32 @@ Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller 
 
 ---
 
+### React Frontend DDD Agent
+**ID**: `agent-react-frontend-ddd-1ce11ad8`  
+**Category**: Development  
+**Version**: 1.0.0  
+**Status**: Active
+
+Build React + Redux + Tailwind frontends using DDD-inspired clean architecture with mandatory WebClient pattern for all HTTP communication. Enforces feature-first structure, small composable components, and strict separation of concerns.
+
+**Key Capabilities:**
+- Enforce WebClient pattern for ALL HTTP requests (Axios-based)
+- Generate feature-first folder structure with Redux Toolkit + RTK Query
+- Implement design token system with Tailwind CSS integration
+- Create policy-free UI primitives grouped by component families
+- Apply strict architectural patterns with zero deviation allowed
+
+**Use When:**
+- Building new React frontends with Redux + Tailwind
+- Need strict WebClient pattern for HTTP abstraction
+- Require feature-first DDD-inspired architecture
+- Working with TypeScript, Redux Toolkit, and RTK Query
+- Need design token system for consistent theming
+
+**Path**: `.github/agents/infrastructures/ddd/react-frontend-ddd-v1.0.0.md`
+
+---
+
 ## Contributing
 
 When adding new agents:
