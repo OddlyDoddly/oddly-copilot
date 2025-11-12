@@ -51,13 +51,13 @@ Document your answers - they'll form the basis of your agent definition.
 
 Select the appropriate template:
 
-- `templates/basic-agent-template.md` - For straightforward, focused agents
-- `templates/advanced-agent-template.md` - For complex agents with sophisticated logic
+- `templates/basic-agent-template.agent.md` - For straightforward, focused agents
+- `templates/advanced-agent-template.agent.md` - For complex agents with sophisticated logic
 
 Copy the template to start your agent:
 
 ```bash
-cp templates/basic-agent-template.md .github/agents/my-new-agent.md
+cp templates/basic-agent-template.agent.md .github/agents/my-new-agent.agent.md
 ```
 
 ### Step 3: Define Your Agent

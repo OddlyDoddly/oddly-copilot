@@ -282,7 +282,7 @@ description:
 - Use lowercase
 - Separate words with hyphens
 - Be descriptive but concise
-- Examples: `python-testing-agent.md`, `code-review-agent.md`
+- Examples: `python-testing-agent.agent.md`, `code-review-agent.agent.md`
 
 **Agent Names (in metadata):**
 - Same as file name (without .md)
@@ -319,8 +319,8 @@ description:
 
 Use provided templates as starting points:
 
-- `templates/basic-agent-template.md` - For simple agents
-- `templates/advanced-agent-template.md` - For complex agents
+- `templates/basic-agent-template.agent.md` - For simple agents
+- `templates/advanced-agent-template.agent.md` - For complex agents
 
 Templates include:
 - All required sections
@@ -361,8 +361,8 @@ Future: Scripts will validate:
 
 See the `examples/` directory for fully compliant agent definitions:
 
-- `examples/python-testing-agent.md` - Testing domain
-- `examples/code-review-agent.md` - Development domain
+- `examples/python-testing-agent.agent.md` - Testing domain
+- `examples/code-review-agent.agent.md` - Development domain
 
 ## Schema Version
 
