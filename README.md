@@ -140,7 +140,7 @@ Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller 
 ---
 
 ### FOFA React Agent (Feature Oriented Frontend Architecture)
-**ID**: `agent-react-frontend-ddd-1ce11ad8`  
+**ID**: `agent-fofa-react-cfb67fa9`  
 **Category**: Development  
 **Version**: 1.0.1  
 **Status**: Active

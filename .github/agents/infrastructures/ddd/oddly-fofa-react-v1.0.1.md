@@ -1,6 +1,6 @@
 ---
 name: oddly-fofa-react-v1.0.1
-id: agent-react-frontend-ddd-1ce11ad8
+id: agent-fofa-react-cfb67fa9
 version: 1.0.1
 description: >
   Build React + Redux + Tailwind frontends using Feature Oriented Frontend Architecture (FOFA) with MANDATORY 
