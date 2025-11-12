@@ -178,7 +178,7 @@ Test this agent with:
 
 ## Maintenance
 
-### Version History
+### Changelog
 
 - **1.0.0** (YYYY-MM-DD): Initial version
 

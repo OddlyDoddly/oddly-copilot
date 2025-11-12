@@ -487,10 +487,10 @@ CRITICAL: Severe failures
 
 ## Maintenance
 
-### Version History
+### Changelog
 
 - **1.0.0** (YYYY-MM-DD): Initial version
-  - [Feature list]
+  - [Feature list or description of what was added]
   
 ### Upgrade Path
 
