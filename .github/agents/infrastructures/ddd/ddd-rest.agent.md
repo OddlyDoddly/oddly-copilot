@@ -1,7 +1,7 @@
 ---
-name: oddly-ddd-rest-v2.1.1
+name: oddly-ddd-rest-v2.2.0
 id: agent-ddd-rest-0a7f72f9
-version: 2.1.1
+version: 2.2.0
 description: >
   Build REST backends using DDD + MVC with MANDATORY separation of layers and object types.
   These are REQUIREMENTS, not suggestions. Custom standards override ALL language conventions.
@@ -71,6 +71,9 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 - [ ] I understand: Services/Repositories - interfaces in root, implementations in /impl/
 - [ ] I understand: Objects without contracts (Mappers, Queues, Controllers, DTOs) - implementations in root (no /impl/)
 - [ ] I understand: ALL folders need /infra/ subdirectory for abstractions (BaseRepository, IMapper, ServiceException, BaseModel, BaseEntity, etc.)
+- [ ] I understand: ALL date/time fields MUST include `Utc` suffix (e.g., `createdAtUtc`, `scheduledTimeUtc`)
+- [ ] I understand: ALL timestamps MUST be stored in UTC in the database
+- [ ] I understand: ALL variables with units MUST include the unit in the name (e.g., `durationSeconds`, `lengthMeters`)
 
 ---
 
@@ -97,6 +100,10 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 ❌ **HTTP calls between subdomains** - MUST use domain events via queue
 ❌ **Direct database access across subdomains** - Each subdomain has own database
 ❌ **Non-standard error responses** - MUST follow ErrorResponse contract
+❌ **Date/time fields without `Utc` suffix** - ALL date/time properties MUST end with `Utc` (e.g., `createdAtUtc`, NOT `createdAt`)
+❌ **Storing dates in non-UTC timezone** - ALL timestamps MUST be converted to UTC before database storage
+❌ **Variables with units missing the unit** - Variables representing measurements MUST include unit (e.g., `durationSeconds`, NOT `duration`)
+❌ **Accepting date/time without timezone offset** - API inputs MUST include timezone information
 
 ---
 
@@ -253,6 +260,8 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 - Member fields: `_variable` (underscore prefix) or `m_variable` (if underscore disallowed)
 - Parameters: `p_variable` (p_ prefix)
 - Local variables: camelCase
+- **Date/Time fields (MANDATORY)**: MUST include `Utc` suffix for ALL date/time columns and properties (e.g., `CreatedAtUtc`, `UpdatedAtUtc`, `ScheduledTimeUtc`)
+- **Variables with units of measurement (MANDATORY)**: MUST include the unit in the variable name (e.g., `DurationSeconds`, `DurationMinutes`, `LengthMiles`, `LengthCentimeters`, `LengthKilometers`, `WeightKilograms`, `TemperatureCelsius`)
 
 **Example:**
 ```csharp
@@ -348,8 +357,8 @@ public abstract class BaseModel {
 // /infrastructure/persistence/infra/BaseEntity.cs - Infrastructure abstraction
 public abstract class BaseEntity {
     public string Id { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateTime CreatedAtUtc { get; set; }  // MUST include Utc suffix
+    public DateTime UpdatedAtUtc { get; set; }  // MUST include Utc suffix
 }
 
 // /infrastructure/persistence/write/infra/BaseWriteEntity.cs - Infrastructure abstraction
@@ -373,8 +382,8 @@ public abstract class BaseReadEntity : BaseEntity {
 abstract class BaseWriteEntity {
   id: Id
   version?: number
-  createdAt: Date
-  updatedAt: Date
+  createdAtUtc: Date  // MUST include Utc suffix and store in UTC
+  updatedAtUtc: Date  // MUST include Utc suffix and store in UTC
 }
 ```
 
@@ -408,6 +417,33 @@ interface IMapper<TDto, TModel, TWriteEntity, TReadEntity> {
   ToWriteEntity(model: TModel): TWriteEntity
   ToResponseFromReadEntity(entity: TReadEntity): BaseResponseDto
   ToResponseFromModel(model: TModel): BaseResponseDto
+}
+```
+
+---
+
+# Date/Time and Timezone Handling (MANDATORY)
+
+**MUST store ALL timestamps in UTC with `Utc` suffix in names:**
+
+✅ CORRECT: `createdAtUtc`, `updatedAtUtc`, `scheduledTimeUtc`  
+❌ WRONG: `createdAt`, `created`, `timestamp`
+
+**Unit of Measurement (MANDATORY):**
+
+Variables with units MUST include the unit: `durationSeconds`, `lengthMeters`, `weightKilograms`, `temperatureCelsius`  
+❌ WRONG: `duration`, `length`, `weight`, `temperature`
+
+**Example:**
+```typescript
+interface CreateEventRequest {
+  scheduledTimeUtc: string;  // ISO 8601 with timezone
+  durationMinutes: number;
+}
+class EventWriteEntity {
+  scheduledTimeUtc: Date;    // Stored in UTC
+  durationMinutes: number;
+  createdAtUtc: Date;
 }
 ```
 
@@ -737,5 +773,9 @@ Front-End → REST API (per subdomain)
 24. ✅ MUST follow standard HTTP error response contract
 25. ✅ MUST map ServiceException codes to HTTP status codes
 26. ✅ MUST NOT make HTTP calls between subdomains or share databases
+27. ✅ MUST include `Utc` suffix in ALL date/time field names (e.g., `createdAtUtc`, `scheduledTimeUtc`)
+28. ✅ MUST store ALL timestamps in UTC in the database
+29. ✅ MUST include units in variable names for all measurements (e.g., `durationSeconds`, `lengthMeters`, `weightKilograms`)
+30. ✅ MUST accept date/time inputs with timezone information and convert to UTC
 
 **If you violate any of these rules, you have failed the task.**
