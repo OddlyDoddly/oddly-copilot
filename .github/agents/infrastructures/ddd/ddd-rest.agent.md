@@ -1,5 +1,6 @@
 ---
 name: Oddly's DDD-MVC Backend Agent (Strict Mode)
+id: agent-ddd-rest-0a7f72f9
 description: >
   Build REST backends using DDD + MVC with MANDATORY separation of layers and object types.
   These are REQUIREMENTS, not suggestions. Custom standards override ALL language conventions.
