@@ -183,8 +183,8 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 **Namespace MUST follow folder structure.**
 
 ## Interface/Implementation Separation:
-- Interfaces: Main directory (e.g., `/application/services/I<Feature>Service`)
-- Implementations: `/impl/` subdirectory (e.g., `/application/services/impl/<Feature>Service`)
+- Interfaces: Main directory (e.g., `/application/services/I{Feature}Service`)
+- Implementations: `/impl/` subdirectory (e.g., `/application/services/impl/{Feature}Service`)
 - MUST: Interface names start with `I`
 
 ---
@@ -198,7 +198,7 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 - Read entities: `ReadEntity` suffix in /persistence/read/
 - Business models: `Model` or `BMO` suffix
 - DTOs: `Request`|`Response`|`Dto` suffix
-- Domain events: `Event` suffix, pattern: `{Object}{Action}Event` (e.g., `<Object>CreatedEvent`)
+- Domain events: `Event` suffix, pattern: `{Object}{Action}Event` (e.g., `{Object}CreatedEvent`)
 - Middleware: `Middleware` suffix
 - Async functions: `Async` suffix
 - Member fields: `_variable` (underscore prefix) or `m_variable` (if underscore disallowed)
@@ -207,32 +207,32 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 
 **Example:**
 ```csharp
-// /domain/models/<Feature>Model.cs - NO DB attributes
-public class <Feature>Model {
+// /domain/models/{Feature}Model.cs - NO DB attributes
+public class {Feature}Model {
     private string _id;
     public void ValidateBusinessRule(string p_param) { }
 }
 
-// /infrastructure/persistence/write/<Feature>WriteEntity.cs - Commands
-[BsonCollection("<features>")]
-public class <Feature>WriteEntity {
+// /infrastructure/persistence/write/{Feature}WriteEntity.cs - Commands
+[BsonCollection("{features}")]
+public class {Feature}WriteEntity {
     [BsonId] public string Id { get; set; }
     [BsonElement("field")] public string Field { get; set; }
 }
 
-// /infrastructure/persistence/read/<Feature>ReadEntity.cs - Queries
-[BsonCollection("<features>_view")]
-public class <Feature>ReadEntity {
+// /infrastructure/persistence/read/{Feature}ReadEntity.cs - Queries
+[BsonCollection("{features}_view")]
+public class {Feature}ReadEntity {
     [BsonId] public string Id { get; set; }
     [BsonElement("field")] public string Field { get; set; }
     [BsonElement("computed_field")] public string ComputedField { get; set; }
 }
 
-// /application/mappers/<Feature>Mapper.cs
-public class <Feature>Mapper {
-    public <Feature>Model ToModel(<Feature>WriteEntity p_entity) { }
-    public <Feature>WriteEntity ToWriteEntity(<Feature>Model p_model) { }
-    public <Feature>Response ToResponse(<Feature>ReadEntity p_entity) { }
+// /application/mappers/{Feature}Mapper.cs
+public class {Feature}Mapper {
+    public {Feature}Model ToModel({Feature}WriteEntity p_entity) { }
+    public {Feature}WriteEntity ToWriteEntity({Feature}Model p_model) { }
+    public {Feature}Response ToResponse({Feature}ReadEntity p_entity) { }
 }
 ```
 
@@ -352,14 +352,14 @@ export interface IUnitOfWork {
 
 **Pattern:**
 ```typescript
-// /domain/events/<Object>CreatedEvent.ts
-export class <Object>CreatedEvent {
+// /domain/events/{Object}CreatedEvent.ts
+export class {Object}CreatedEvent {
   readonly eventId: string;
   readonly objectId: string;
   readonly timestamp: Date;
   readonly correlationId: string;
   
-  constructor(data: <Object>CreatedEventData) {
+  constructor(data: {Object}CreatedEventData) {
     this.eventId = generateId();
     this.objectId = data.objectId;
     this.timestamp = new Date();
@@ -381,7 +381,7 @@ export interface IEventSubscriber {
 }
 ```
 
-**Topic Naming:** `{subdomain}.{action}` (e.g., `<subdomain>.created`, `<subdomain>.processed`)
+**Topic Naming:** `{subdomain}.{action}` (e.g., `{subdomain}.created`, `{subdomain}.processed`)
 
 ---
 
@@ -422,18 +422,18 @@ namespace Application.Errors
 
 **Usage:**
 ```csharp
-// /application/errors/<Feature>ServiceException.cs
-public enum <Feature>ErrorCode { NotFound, ValidationFailed, Conflict }
+// /application/errors/{Feature}ServiceException.cs
+public enum {Feature}ErrorCode { NotFound, ValidationFailed, Conflict }
 
-public class <Feature>ServiceException : ServiceException<<Feature>ErrorCode> {
+public class {Feature}ServiceException : ServiceException<{Feature}ErrorCode> {
     private static readonly IReadOnlyDictionary<string, string> _messageTemplates = 
         new Dictionary<string, string> {
-            { nameof(<Feature>ErrorCode.NotFound), "<Feature> '{id}' not found" },
-            { nameof(<Feature>ErrorCode.ValidationFailed), "Validation failed: {reason}" }
+            { nameof({Feature}ErrorCode.NotFound), "{Feature} '{id}' not found" },
+            { nameof({Feature}ErrorCode.ValidationFailed), "Validation failed: {reason}" }
         };
     
-    public <Feature>ServiceException(
-        <Feature>ErrorCode p_code, 
+    public {Feature}ServiceException(
+        {Feature}ErrorCode p_code, 
         IReadOnlyDictionary<string, object>? p_details = null
     ) : base(p_code, _messageTemplates, p_details) { }
 }
@@ -488,12 +488,12 @@ interface ErrorResponse {
 **Pattern:**
 ```typescript
 // Subdomain A Service (Publisher)
-class <Feature>Service {
-  async create<Feature>(p_object: <Feature>Model): Promise<string> {
+class {Feature}Service {
+  async create{Feature}(p_object: {Feature}Model): Promise<string> {
     const objectId = await this._commandRepo.CreateAsync(p_object);
     
     await this._eventPublisher.Publish(
-      new <Object>CreatedEvent({ objectId, ... })
+      new {Object}CreatedEvent({ objectId, ... })
     );
     
     return objectId;
@@ -501,8 +501,8 @@ class <Feature>Service {
 }
 
 // Subdomain B Service (Subscriber - different repo)
-class <Related>EventHandler implements IEventSubscriber<<Object>CreatedEvent> {
-  async handle(p_event: <Object>CreatedEvent): Promise<void> {
+class {Related}EventHandler implements IEventSubscriber<{Object}CreatedEvent> {
+  async handle(p_event: {Object}CreatedEvent): Promise<void> {
     await this._relatedService.ProcessAsync({
       objectId: p_event.objectId,
       data: p_event.data
@@ -548,18 +548,18 @@ Front-End → REST API (per subdomain)
 **Scaffold Structure (CQRS):**
 ```
 /src/infrastructure/persistence/
-  /write/ - <Feature>WriteEntity - commands
-  /read/ - <Feature>ReadEntity - queries
-/src/domain/models/ - <Feature>Model - NO DB attributes
-/src/application/mappers/ - <Feature>Mapper - MANDATORY
-/src/application/services/ - I<Feature>Service
-  /impl/ - <Feature>Service
+  /write/ - {Feature}WriteEntity - commands
+  /read/ - {Feature}ReadEntity - queries
+/src/domain/models/ - {Feature}Model - NO DB attributes
+/src/application/mappers/ - {Feature}Mapper - MANDATORY
+/src/application/services/ - I{Feature}Service
+  /impl/ - {Feature}Service
 /src/infrastructure/repositories/ - ICommandRepository, IQueryRepository
   /impl/ - CommandRepository, QueryRepository
 /src/api/dto/v1/ - Request, Response
 /src/api/controllers/ - Controller
 /src/api/middleware/ - OwnershipMiddleware, UnitOfWorkMiddleware
-/src/domain/events/ - <Feature><Action>Event
+/src/domain/events/ - {Feature}{Action}Event
 /src/infrastructure/queues/ - IEventPublisher, IEventSubscriber
   /impl/ - EventBus
   /subscribers/ - EventSubscribers
