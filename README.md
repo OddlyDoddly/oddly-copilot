@@ -147,30 +147,35 @@ Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller 
 ### DDD REST Refactor Agent
 **ID**: `agent-ddd-rest-refactor-da8c8190`  
 **Category**: Development  
-**Version**: 1.0.0  
+**Version**: 1.1.0  
 **Status**: Active
 
-Refactor legacy code to DDD + MVC REST architecture while preserving 100% of business logic. Copies pre-approved infrastructure from oddly-infrastructures repository, moves existing code to `/legacy` subfolder, and applies mandatory architectural standards to infrastructure only. This is an infrastructure refactor agent that NEVER modifies business rules, calculations, or workflows.
+Refactor legacy code to DDD + MVC REST architecture while preserving 100% of business logic. Copies pre-approved infrastructure from oddly-infrastructures repository, moves existing code to `/legacy` subfolder, and applies mandatory architectural standards to infrastructure only. Supports multiple business subdomains in monolithic repositories - creates separate root folders with complete infrastructure copies for each subdomain. This is an infrastructure refactor agent that NEVER modifies business rules, calculations, or workflows.
 
 **Key Capabilities:**
 - Detect programming language from legacy code (C#, Java, Python, TypeScript)
+- Identify and handle multiple business subdomains in legacy monolithic applications
+- Create separate root folder for each subdomain with complete infrastructure
 - Backup all legacy code to `/legacy` subfolder automatically
-- Copy language-specific infrastructure from oddly-infrastructures repository
+- Copy language-specific infrastructure from oddly-infrastructures repository (to root or each subdomain)
 - Analyze and document all existing business logic before refactoring
+- Map legacy code to specific subdomains when multiple domains exist
 - Extract domain models (BMOs) with preserved business methods
-- Create proper layer separation (Domain, Application, Infrastructure)
+- Create proper layer separation (Domain, Application, Infrastructure) per subdomain
 - Implement repository pattern and mappers without changing business logic
 - Migrate existing tests to new structure
 - Verify business logic preservation for every rule
 
 **Use When:**
 - Migrating legacy monolithic code to DDD architecture
+- Legacy codebase contains multiple distinct business subdomains
 - Need to modernize infrastructure while keeping business logic intact
 - Have existing codebase that lacks proper layer separation
 - Want to apply DDD patterns to brownfield projects
 - Require strict preservation of existing business functionality
+- Need to split monolithic application into subdomain-based structure
 
-**Path**: `.github/agents/infrastructures/ddd/oddly-ddd-rest-refactor-v1.0.0.md`
+**Path**: `.github/agents/infrastructures/ddd/oddly-ddd-rest-refactor-v1.1.0.agent.md`
 
 ---
 
