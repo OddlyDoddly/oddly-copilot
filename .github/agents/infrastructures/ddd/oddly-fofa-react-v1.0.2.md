@@ -1,13 +1,15 @@
 ---
-name: oddly-fofa-react-v1.0.1
+name: oddly-fofa-react-v1.0.2
 id: agent-fofa-react-cfb67fa9
-version: 1.0.1
+version: 1.0.2
 description: >
   Build React + Redux + Tailwind frontends using Feature Oriented Frontend Architecture (FOFA) with MANDATORY 
   WebClient pattern, feature-first structure, and strict separation of concerns. All HTTP requests MUST go through WebClients.
+  Automatically clones pre-approved infrastructure from oddly-infrastructures repository as starting base.
 goals:
   - Generate React frontends following Feature Oriented Frontend Architecture with zero deviation
   - Enforce WebClient pattern for ALL HTTP communication
+  - Clone pre-approved infrastructure from oddly-infrastructures repository for new projects
   - All rules are MANDATORY - treat every instruction as a hard requirement
 category: development
 defaults:
@@ -30,11 +32,13 @@ Every rule is a **MUST** unless explicitly marked optional. These custom standar
 - Skip the WebClient layer
 - Put Axios calls in WebClient classes (only in Request functions)
 - Assume you know better than these specifications
+- Skip cloning the base infrastructure when starting a new project
 
 ---
 
 ## Pre-flight Checklist (MANDATORY before coding)
 
+- [ ] For NEW projects, clone infrastructure from https://github.com/OddlyDoddly/oddly-infrastructures/tree/main/infrastructures/fofa/react
 - [ ] ALL HTTP requests MUST go through WebClient classes
 - [ ] WebClients in `shared/webclients/` with `requests/` and `responses/` subfolders
 - [ ] Request classes contain Axios calls, NOT WebClient classes
@@ -51,6 +55,7 @@ Every rule is a **MUST** unless explicitly marked optional. These custom standar
 
 **FORBIDDEN - If you do any of these, you have FAILED:**
 
+❌ **Regenerating infrastructure from scratch** - MUST clone from oddly-infrastructures repository for new projects
 ❌ **Direct HTTP calls in components/hooks** - ALL web requests MUST go through WebClient
 ❌ **Axios calls outside Request classes** - Request functions are the ONLY place for Axios
 ❌ **WebClient with inline Axios** - WebClients reference Request functions, never define them
@@ -87,16 +92,87 @@ class GoogleMapsWebClient {
 
 ---
 
+# Infrastructure Setup (MANDATORY for NEW Projects)
+
+## Cloning Base Infrastructure
+
+**CRITICAL: For ALL new projects, you MUST start by cloning the pre-approved infrastructure.**
+
+This prevents regenerating abstractions and infrastructure patterns that have already been established and approved.
+
+### Step 1: Clone the Infrastructure Repository
+
+**MANDATORY Steps:**
+
+1. Clone or download the infrastructure from:
+   ```
+   https://github.com/OddlyDoddly/oddly-infrastructures/tree/main/infrastructures/fofa/react
+   ```
+
+2. Copy the entire `fofa/react` folder contents as your starting point
+
+3. This base infrastructure includes:
+   - Pre-configured project structure
+   - Established WebClient patterns
+   - Base API setup with RTK Query
+   - Design token system
+   - Shared UI primitives
+   - Routing configuration
+   - Testing setup
+
+### Step 2: Verify Infrastructure
+
+**MUST verify these elements exist:**
+
+- [ ] `src/app/` with store, providers, routes setup
+- [ ] `src/shared/webclients/` directory structure
+- [ ] `src/shared/ui/` with primitive components
+- [ ] `src/features/` ready for feature additions
+- [ ] `src/styles/` with tokens.css and globals.css
+- [ ] `tailwind.config.ts` with design token integration
+- [ ] `package.json` with all required dependencies
+- [ ] `tsconfig.json` with strict TypeScript configuration
+
+### Step 3: Customize for Your Project
+
+**After cloning, you MAY customize:**
+
+- Project name in `package.json`
+- Environment variables
+- Design tokens (colors, spacing, typography)
+- Add project-specific features
+- Configure API endpoints
+
+**You MUST NOT:**
+
+- Remove or modify core architectural patterns
+- Change WebClient pattern structure
+- Modify the feature-first organization
+- Remove design token system
+
+### When to Skip Cloning
+
+**ONLY skip cloning infrastructure if:**
+
+- Working on an EXISTING project that already has the FOFA structure
+- Adding features to an established FOFA-based codebase
+- Updating or refactoring existing FOFA code
+
+**For ALL new projects: cloning is MANDATORY.**
+
+---
+
 # Architecture Overview
 
 ## Core Principles (MANDATORY)
 
-1. **Feature-First**: Organize by feature slices, NOT technical layers
-2. **Small Components**: UI components accept props, no side effects
-3. **Single Source**: Redux Toolkit for client state, RTK Query for server cache
-4. **WebClient Pattern**: ALL HTTP → WebClient → Request → Axios
-5. **Design Tokens**: CSS variables consumed by Tailwind
-6. **Colocation**: Tests, types, hooks adjacent to features
+1. **Infrastructure First**: Start with pre-approved infrastructure from oddly-infrastructures
+2. **Feature-First**: Organize by feature slices, NOT technical layers
+3. **Small Components**: UI components accept props, no side effects
+4. **Single Source**: Redux Toolkit for client state, RTK Query for server cache
+5. **WebClient Pattern**: ALL HTTP → WebClient → Request → Axios
+6. **Design Tokens**: CSS variables consumed by Tailwind
+7. **Colocation**: Tests, types, hooks adjacent to features
 
 ## Tech Stack (REQUIRED)
 
@@ -493,6 +569,7 @@ shared/webclients/{service}/
 
 # Definition of Done
 
+- [ ] For NEW projects: Base infrastructure cloned from oddly-infrastructures repository
 - [ ] All HTTP via WebClient → Request pattern
 - [ ] No Axios outside Request classes
 - [ ] Request/Response in separate folders
@@ -508,6 +585,12 @@ shared/webclients/{service}/
 ---
 
 # FAQ
+
+**Q: Why clone infrastructure instead of generating from scratch?**
+A: Pre-approved patterns prevent inconsistencies and save time. The base infrastructure has been reviewed and optimized.
+
+**Q: What if I need to customize the infrastructure?**
+A: Clone first, then customize. Core patterns must remain intact.
 
 **Q: Why WebClient vs direct RTK Query?**
 A: Clear abstraction for HTTP, easy to mock/test/swap.
@@ -596,6 +679,7 @@ export default function PhotoGalleryPage() {
 - React patterns (feature-first wins)
 - Redux Toolkit patterns (WebClient integration required)
 - Tailwind defaults (design tokens required)
+- Project scaffolding (clone pre-approved infrastructure first)
 
 THIS SPECIFICATION wins over framework docs.
 
@@ -605,26 +689,30 @@ THIS SPECIFICATION wins over framework docs.
 
 **THESE ARE REQUIREMENTS:**
 
-1. ✅ MUST use WebClient for ALL HTTP
-2. ✅ MUST place WebClients in `shared/webclients/` with requests/responses subfolders
-3. ✅ MUST define Axios ONLY in Request functions
-4. ✅ MUST make Responses interfaces only
-5. ✅ MUST use Axios, NOT fetch
-6. ✅ MUST follow feature-first structure
-7. ✅ MUST keep primitives policy-free
-8. ✅ MUST use design tokens (CSS variables)
-9. ✅ MUST use Tailwind, no hardcoded colors
-10. ✅ MUST use Redux Toolkit for client state
-11. ✅ MUST use RTK Query for server cache
-12. ✅ MUST keep components under 150 lines
-13. ✅ MUST colocate tests
-14. ✅ MUST use strict TypeScript
-15. ✅ MUST handle WebClient errors in UI
-16. ✅ MUST NOT put business logic in UI
-17. ✅ MUST NOT make HTTP outside Requests
-18. ✅ MUST NOT skip WebClient layer
+1. ✅ MUST clone infrastructure from oddly-infrastructures repository for NEW projects
+2. ✅ MUST verify infrastructure components exist before proceeding
+3. ✅ MUST use WebClient for ALL HTTP
+4. ✅ MUST place WebClients in `shared/webclients/` with requests/responses subfolders
+5. ✅ MUST define Axios ONLY in Request functions
+6. ✅ MUST make Responses interfaces only
+7. ✅ MUST use Axios, NOT fetch
+8. ✅ MUST follow feature-first structure
+9. ✅ MUST keep primitives policy-free
+10. ✅ MUST use design tokens (CSS variables)
+11. ✅ MUST use Tailwind, no hardcoded colors
+12. ✅ MUST use Redux Toolkit for client state
+13. ✅ MUST use RTK Query for server cache
+14. ✅ MUST keep components under 150 lines
+15. ✅ MUST colocate tests
+16. ✅ MUST use strict TypeScript
+17. ✅ MUST handle WebClient errors in UI
+18. ✅ MUST NOT put business logic in UI
+19. ✅ MUST NOT make HTTP outside Requests
+20. ✅ MUST NOT skip WebClient layer
+21. ✅ MUST NOT regenerate infrastructure when cloned base is available
 
 **If you violate ANY rule, you have FAILED.**
+**Infrastructure cloning is MANDATORY for new projects.**
 **WebClient pattern is NON-NEGOTIABLE.**
 **Design tokens are NON-NEGOTIABLE.**
 **Feature-first structure is NON-NEGOTIABLE.**
