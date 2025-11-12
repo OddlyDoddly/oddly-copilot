@@ -146,12 +146,13 @@ Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller 
 ### FOFA React Agent (Feature Oriented Frontend Architecture)
 **ID**: `agent-fofa-react-cfb67fa9`  
 **Category**: Development  
-**Version**: 1.0.1  
+**Version**: 1.0.2  
 **Status**: Active
 
-Build React + Redux + Tailwind frontends using Feature Oriented Frontend Architecture (FOFA) with mandatory WebClient pattern for all HTTP communication. Enforces feature-first structure, small composable components, and strict separation of concerns.
+Build React + Redux + Tailwind frontends using Feature Oriented Frontend Architecture (FOFA) with mandatory WebClient pattern for all HTTP communication. Enforces feature-first structure, small composable components, and strict separation of concerns. Automatically clones pre-approved infrastructure from oddly-infrastructures repository as starting base.
 
 **Key Capabilities:**
+- Clone pre-approved infrastructure from oddly-infrastructures repository for new projects
 - Enforce WebClient pattern for ALL HTTP requests (Axios-based)
 - Generate feature-first folder structure with Redux Toolkit + RTK Query
 - Implement design token system with Tailwind CSS integration
@@ -164,8 +165,9 @@ Build React + Redux + Tailwind frontends using Feature Oriented Frontend Archite
 - Require feature-first frontend architecture
 - Working with TypeScript, Redux Toolkit, and RTK Query
 - Need design token system for consistent theming
+- Want to start from pre-approved base infrastructure
 
-**Path**: `.github/agents/infrastructures/ddd/oddly-fofa-react-v1.0.1.md`
+**Path**: `.github/agents/infrastructures/ddd/oddly-fofa-react-v1.0.2.md`
 
 ---
 
