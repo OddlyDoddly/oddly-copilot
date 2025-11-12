@@ -92,7 +92,7 @@ This is a catalog of all available agents in this repository. Each agent has a u
 ### Agent Builder
 **ID**: `agent-agent-builder-37bb1763`  
 **Category**: Development  
-**Version**: 2.2.0  
+**Version**: 2.3.0  
 **Status**: Active
 
 An interactive agent that guides you through creating new GitHub Copilot agent definitions by asking questions and generating complete configuration files automatically. This agent also maintains standardized documentation for all agents in the repository.
