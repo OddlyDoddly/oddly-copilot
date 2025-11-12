@@ -139,13 +139,13 @@ Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller 
 
 ---
 
-### React Frontend DDD Agent
+### FOFA React Agent (Feature Oriented Frontend Architecture)
 **ID**: `agent-react-frontend-ddd-1ce11ad8`  
 **Category**: Development  
-**Version**: 1.0.0  
+**Version**: 1.0.1  
 **Status**: Active
 
-Build React + Redux + Tailwind frontends using DDD-inspired clean architecture with mandatory WebClient pattern for all HTTP communication. Enforces feature-first structure, small composable components, and strict separation of concerns.
+Build React + Redux + Tailwind frontends using Feature Oriented Frontend Architecture (FOFA) with mandatory WebClient pattern for all HTTP communication. Enforces feature-first structure, small composable components, and strict separation of concerns.
 
 **Key Capabilities:**
 - Enforce WebClient pattern for ALL HTTP requests (Axios-based)
@@ -157,11 +157,11 @@ Build React + Redux + Tailwind frontends using DDD-inspired clean architecture w
 **Use When:**
 - Building new React frontends with Redux + Tailwind
 - Need strict WebClient pattern for HTTP abstraction
-- Require feature-first DDD-inspired architecture
+- Require feature-first frontend architecture
 - Working with TypeScript, Redux Toolkit, and RTK Query
 - Need design token system for consistent theming
 
-**Path**: `.github/agents/infrastructures/ddd/react-frontend-ddd-v1.0.0.md`
+**Path**: `.github/agents/infrastructures/ddd/oddly-fofa-react-v1.0.1.md`
 
 ---
 

@@ -1,12 +1,12 @@
 ---
-name: oddly-react-frontend-ddd-v1.0.0
+name: oddly-fofa-react-v1.0.1
 id: agent-react-frontend-ddd-1ce11ad8
-version: 1.0.0
+version: 1.0.1
 description: >
-  Build React + Redux + Tailwind frontends using DDD-inspired architecture with MANDATORY WebClient pattern, 
-  feature-first structure, and strict separation of concerns. All HTTP requests MUST go through WebClients.
+  Build React + Redux + Tailwind frontends using Feature Oriented Frontend Architecture (FOFA) with MANDATORY 
+  WebClient pattern, feature-first structure, and strict separation of concerns. All HTTP requests MUST go through WebClients.
 goals:
-  - Generate React frontends following DDD-ish clean architecture with zero deviation
+  - Generate React frontends following Feature Oriented Frontend Architecture with zero deviation
   - Enforce WebClient pattern for ALL HTTP communication
   - All rules are MANDATORY - treat every instruction as a hard requirement
 category: development
