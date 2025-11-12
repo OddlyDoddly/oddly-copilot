@@ -1,7 +1,7 @@
 ---
-name: oddly-ddd-rest-v2
+name: oddly-ddd-rest-v2.1.1
 id: agent-ddd-rest-0a7f72f9
-version: 2.1.0
+version: 2.1.1
 description: >
   Build REST backends using DDD + MVC with MANDATORY separation of layers and object types.
   These are REQUIREMENTS, not suggestions. Custom standards override ALL language conventions.
@@ -69,8 +69,8 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 - [ ] I understand: Repositories map Entity internally, return BMO externally
 - [ ] I understand: Custom standards override C#/Java/framework conventions
 - [ ] I understand: Services/Repositories - interfaces in root, implementations in /impl/
-- [ ] I understand: Mappers - implementations in root (no /impl/ needed)
-- [ ] I understand: Infrastructure abstractions (BaseRepository, IMapper) go in /infra/
+- [ ] I understand: Objects without contracts (Mappers, Queues, Controllers, DTOs) - implementations in root (no /impl/)
+- [ ] I understand: ALL folders need /infra/ subdirectory for abstractions (BaseRepository, IMapper, ServiceException, BaseModel, BaseEntity, etc.)
 
 ---
 
@@ -85,8 +85,9 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 ❌ **ServiceExceptions in /application/services/** - MUST be in `/application/errors/`
 ❌ **Committing build artifacts** - bin/, obj/, *.dll, *.exe, node_modules/, etc.
 ❌ **Mixing service/repository interfaces with implementations** - Interfaces in root, impls in /impl/
-❌ **Creating /impl/ for Mappers** - Mappers have no autowiring contracts, keep in root
-❌ **Putting infrastructure abstractions with implementations** - BaseRepository, IMapper go in /infra/
+❌ **Creating /impl/ for objects without contracts** - Mappers, Queues, Controllers, DTOs have no contracts, keep implementations in root
+❌ **Missing /infra/ subdirectory** - EVERY folder needs /infra/ for base classes/abstractions (BaseRepository, IMapper, ServiceException, BaseModel, BaseEntity, BaseController, BaseRequest, BaseResponse, etc.)
+❌ **Putting infrastructure abstractions with implementations** - ALL base classes and generic interfaces MUST go in /infra/
 ❌ **Mixing ReadEntities and WriteEntities** - Separate /write/ and /read/ directories
 ❌ **Using WriteEntity for queries or ReadEntity for commands** - Strict separation required
 ❌ **Single repository for read/write** - MUST separate ICommandRepository and IQueryRepository
@@ -157,8 +158,12 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 ```
 /src/
   /api/
-    /controllers/      # HTTP endpoints. Map DTOs. No business logic
-    /dto/              # Request/Response DTOs
+    /controllers/      # Controller implementations (no /impl/ - no contracts)
+      /infra/          # Base controllers, abstractions
+    /dto/              # DTO root
+      /requests/       # Request DTOs
+      /responses/      # Response DTOs
+      /infra/          # BaseRequest, BaseResponse, common DTO abstractions
     /middleware/       # Security, UnitOfWork, auth, logging, errors
   /application/
     /services/         # Service interfaces (I{Feature}Service)
@@ -167,8 +172,10 @@ node_modules/, packages/, __pycache__/, *.egg-info/
       /infra/          # Infrastructure abstractions (IMapper interface, BaseMapper)
     /policies/         # Authorization, domain policies
     /errors/           # Service-scoped errors
+      /infra/          # ServiceException base class
   /domain/
     /models/           # BMOs with behavior (NO DB ATTRIBUTES)
+      /infra/          # BaseModel, common domain abstractions
     /events/           # Domain events
   /infrastructure/
     /repositories/     # Repository interfaces (ICommandRepository, IQueryRepository)
@@ -176,9 +183,14 @@ node_modules/, packages/, __pycache__/, *.egg-info/
       /infra/          # Infrastructure abstractions (BaseRepository)
     /persistence/      # Entities, contexts, migrations
       /write/          # WriteEntities for commands
+        /infra/        # BaseWriteEntity
       /read/           # ReadEntities for queries
-    /queues/           # Event publisher/subscriber
+        /infra/        # BaseReadEntity
+      /infra/          # BaseEntity, DbContext
+    /queues/           # Queue implementations (no /impl/ - no contracts)
+      /infra/          # IEventPublisher, IEventSubscriber interfaces
       /middleware/     # Queue UnitOfWork
+      /subscribers/    # Event subscribers
     /integrations/     # External HTTP clients
 /tests/
   /unit/, /e2e/
@@ -193,19 +205,36 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 ### For Services & Repositories (with autowiring contracts):
 - **Interfaces**: Root directory (e.g., `/application/services/I{Feature}Service`)
 - **Implementations**: `/impl/` subdirectory (e.g., `/application/services/impl/{Feature}Service`)
+- **Infrastructure**: `/infra/` subdirectory for base classes
 - **MUST**: Interface names start with `I`
 
-### For Mappers (NO autowiring contracts):
-- **Implementations**: Root directory (e.g., `/application/mappers/{Feature}Mapper`)
-- **MUST NOT**: Create `/impl/` subdirectory for mappers
-- **Reason**: Mappers don't have autowiring contracts like services
+### For Objects WITHOUT Autowiring Contracts:
+- **Implementations**: Root directory (NO `/impl/` subdirectory)
+- **Applies to**: Mappers, Queues, Controllers, DTOs
+- **Examples**: 
+  - `/application/mappers/{Feature}Mapper` - Mapper implementation in root
+  - `/infrastructure/queues/EventBus` - Queue implementation in root
+  - `/api/controllers/{Feature}Controller` - Controller in root
+  - `/api/dto/requests/{Feature}Request` - Request DTO in root
+  - `/api/dto/responses/{Feature}Response` - Response DTO in root
+- **Reason**: No autowiring contracts means no interface/implementation split needed
 
-### For Infrastructure Abstractions:
-- **Base Classes/Interfaces**: `/infra/` subdirectory
+### For Infrastructure Abstractions (MANDATORY in ALL folders):
+- **Base Classes/Interfaces**: `/infra/` subdirectory in EVERY folder
+- **MUST**: Every folder type needs `/infra/` for abstractions
 - **Examples**: 
   - `/application/mappers/infra/IMapper` - Mapper interface
-  - `/infrastructure/repositories/infra/BaseRepository` - Base repository class
-- **Purpose**: Generic abstractions used across multiple implementations
+  - `/application/errors/infra/ServiceException` - Base exception class
+  - `/infrastructure/repositories/infra/BaseRepository` - Base repository
+  - `/infrastructure/persistence/infra/BaseEntity` - Base entity
+  - `/infrastructure/persistence/write/infra/BaseWriteEntity` - Base write entity
+  - `/infrastructure/persistence/read/infra/BaseReadEntity` - Base read entity
+  - `/infrastructure/queues/infra/IEventPublisher` - Queue interface
+  - `/api/controllers/infra/BaseController` - Base controller
+  - `/api/dto/infra/BaseRequest` - Base request DTO
+  - `/api/dto/infra/BaseResponse` - Base response DTO
+  - `/domain/models/infra/BaseModel` - Base domain model
+- **Purpose**: Centralize ALL generic abstractions, base classes, and shared interfaces
 
 ---
 
@@ -260,6 +289,77 @@ public class {Feature}Mapper : IMapper<{Feature}Response, {Feature}Model, {Featu
     public {Feature}Model ToModel({Feature}WriteEntity p_entity) { }
     public {Feature}WriteEntity ToWriteEntity({Feature}Model p_model) { }
     public {Feature}Response ToResponse({Feature}ReadEntity p_entity) { }
+}
+
+// /api/dto/infra/BaseRequest.cs - Infrastructure abstraction
+public abstract class BaseRequest {
+    public string RequestId { get; set; }
+}
+
+// /api/dto/infra/BaseResponse.cs - Infrastructure abstraction
+public abstract class BaseResponse {
+    public string RequestId { get; set; }
+    public DateTime Timestamp { get; set; }
+}
+
+// /api/dto/requests/Create{Feature}Request.cs - Request in /requests/ folder
+public class Create{Feature}Request : BaseRequest {
+    public string Name { get; set; }
+    public string Description { get; set; }
+}
+
+// /api/dto/responses/{Feature}Response.cs - Response in /responses/ folder
+public class {Feature}Response : BaseResponse {
+    public string Id { get; set; }
+    public string Name { get; set; }
+}
+
+// /api/controllers/infra/BaseController.cs - Infrastructure abstraction
+public abstract class BaseController {
+    protected void ValidateRequest(BaseRequest p_request) { }
+}
+
+// /api/controllers/{Feature}Controller.cs - Controller in root (no /impl/)
+public class {Feature}Controller : BaseController {
+    public async Task<{Feature}Response> CreateAsync(Create{Feature}Request p_request) { }
+}
+
+// /infrastructure/queues/infra/IEventPublisher.cs - Infrastructure abstraction
+public interface IEventPublisher {
+    Task PublishAsync<TEvent>(TEvent p_event) where TEvent : class;
+}
+
+// /infrastructure/queues/EventBus.cs - Queue implementation in root (no /impl/)
+public class EventBus : IEventPublisher {
+    public async Task PublishAsync<TEvent>(TEvent p_event) where TEvent : class { }
+}
+
+// /application/errors/infra/ServiceException.cs - Infrastructure abstraction
+public abstract class ServiceException : Exception {
+    public abstract Enum ErrorCode { get; }
+}
+
+// /domain/models/infra/BaseModel.cs - Infrastructure abstraction
+public abstract class BaseModel {
+    protected string _id;
+    public string Id => _id;
+}
+
+// /infrastructure/persistence/infra/BaseEntity.cs - Infrastructure abstraction
+public abstract class BaseEntity {
+    public string Id { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+// /infrastructure/persistence/write/infra/BaseWriteEntity.cs - Infrastructure abstraction
+public abstract class BaseWriteEntity : BaseEntity {
+    public int Version { get; set; }
+}
+
+// /infrastructure/persistence/read/infra/BaseReadEntity.cs - Infrastructure abstraction
+public abstract class BaseReadEntity : BaseEntity {
+    // Optimized for queries
 }
 ```
 
@@ -575,22 +675,33 @@ Front-End → REST API (per subdomain)
 **Scaffold Structure (CQRS):**
 ```
 /src/infrastructure/persistence/
-  /write/ - {Feature}WriteEntity - commands
-  /read/ - {Feature}ReadEntity - queries
-/src/domain/models/ - {Feature}Model - NO DB attributes
+  /write/ - {Feature}WriteEntity implementations
+    /infra/ - BaseWriteEntity
+  /read/ - {Feature}ReadEntity implementations
+    /infra/ - BaseReadEntity
+  /infra/ - BaseEntity, DbContext
+/src/domain/models/ - {Feature}Model implementations
+  /infra/ - BaseModel
 /src/application/mappers/ - {Feature}Mapper implementations (in root, no /impl/)
   /infra/ - IMapper interface, BaseMapper abstractions
 /src/application/services/ - I{Feature}Service interfaces
   /impl/ - {Feature}Service implementations
+/src/application/errors/ - {Feature}ServiceException implementations
+  /infra/ - ServiceException base class
 /src/infrastructure/repositories/ - ICommandRepository, IQueryRepository interfaces
   /impl/ - CommandRepository, QueryRepository implementations
   /infra/ - BaseRepository, common abstractions
-/src/api/dto/v1/ - Request, Response
-/src/api/controllers/ - Controller
+/src/api/dto/ - DTO root
+  /requests/ - Create{Feature}Request, Update{Feature}Request
+  /responses/ - {Feature}Response
+  /infra/ - BaseRequest, BaseResponse
+/src/api/controllers/ - {Feature}Controller implementations (in root, no /impl/)
+  /infra/ - BaseController
 /src/api/middleware/ - OwnershipMiddleware, UnitOfWorkMiddleware
 /src/domain/events/ - {Feature}{Action}Event
-/src/infrastructure/queues/ - IEventPublisher, IEventSubscriber
-  /impl/ - EventBus
+/src/infrastructure/queues/ - EventBus, concrete implementations (in root, no /impl/)
+  /infra/ - IEventPublisher, IEventSubscriber interfaces
+  /middleware/ - Queue UnitOfWork
   /subscribers/ - EventSubscribers
 ```
 
@@ -610,17 +721,21 @@ Front-End → REST API (per subdomain)
 8. ✅ MUST follow exact filesystem structure
 9. ✅ MUST prioritize custom standards over framework conventions
 10. ✅ MUST separate service/repository interfaces from implementations (/impl subdirectory)
-11. ✅ MUST keep mapper implementations in root (NO /impl/ for mappers - no autowiring contracts)
-12. ✅ MUST put infrastructure abstractions (BaseRepository, IMapper) in /infra/ subdirectory
-13. ✅ MUST separate Command and Query repositories
-14. ✅ MUST implement OwnershipMiddleware
-15. ✅ MUST implement UnitOfWorkMiddleware
-16. ✅ MUST use domain events with `{Object}{Action}Event` pattern
-17. ✅ MUST abstract queue with IEventPublisher/IEventSubscriber
-18. ✅ MUST use REST ONLY for front-end (NOT subdomain-to-subdomain)
-19. ✅ MUST use domain events for ALL subdomain-to-subdomain communication
-20. ✅ MUST follow standard HTTP error response contract
-21. ✅ MUST map ServiceException codes to HTTP status codes
-22. ✅ MUST NOT make HTTP calls between subdomains or share databases
+11. ✅ MUST keep implementations in root for objects WITHOUT contracts (Mappers, Queues, Controllers, DTOs)
+12. ✅ MUST create /infra/ subdirectory in EVERY folder for base classes and abstractions
+13. ✅ MUST put ServiceException in /application/errors/infra/ subdirectory
+14. ✅ MUST separate DTOs into /requests/ and /responses/ folders
+15. ✅ MUST put BaseRequest and BaseResponse in /api/dto/infra/
+16. ✅ MUST put IEventPublisher and IEventSubscriber in /infrastructure/queues/infra/
+17. ✅ MUST separate Command and Query repositories
+18. ✅ MUST implement OwnershipMiddleware
+19. ✅ MUST implement UnitOfWorkMiddleware
+20. ✅ MUST use domain events with `{Object}{Action}Event` pattern
+21. ✅ MUST abstract queue with IEventPublisher/IEventSubscriber in /infra/
+22. ✅ MUST use REST ONLY for front-end (NOT subdomain-to-subdomain)
+23. ✅ MUST use domain events for ALL subdomain-to-subdomain communication
+24. ✅ MUST follow standard HTTP error response contract
+25. ✅ MUST map ServiceException codes to HTTP status codes
+26. ✅ MUST NOT make HTTP calls between subdomains or share databases
 
 **If you violate any of these rules, you have failed the task.**
