@@ -140,7 +140,37 @@ Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller 
 - Working with TypeScript/Node.js, C#, or Java backend services
 - Require Domain-Driven Design patterns
 
-**Path**: `.github/agents/infrastructures/ddd/ddd-rest.agent.md`
+**Path**: `.github/agents/infrastructures/ddd/oddly-ddd-rest-v2.3.0.md`
+
+---
+
+### DDD REST Refactor Agent
+**ID**: `agent-ddd-rest-refactor-da8c8190`  
+**Category**: Development  
+**Version**: 1.0.0  
+**Status**: Active
+
+Refactor legacy code to DDD + MVC REST architecture while preserving 100% of business logic. Copies pre-approved infrastructure from oddly-infrastructures repository, moves existing code to `/legacy` subfolder, and applies mandatory architectural standards to infrastructure only. This is an infrastructure refactor agent that NEVER modifies business rules, calculations, or workflows.
+
+**Key Capabilities:**
+- Detect programming language from legacy code (C#, Java, Python, TypeScript)
+- Backup all legacy code to `/legacy` subfolder automatically
+- Copy language-specific infrastructure from oddly-infrastructures repository
+- Analyze and document all existing business logic before refactoring
+- Extract domain models (BMOs) with preserved business methods
+- Create proper layer separation (Domain, Application, Infrastructure)
+- Implement repository pattern and mappers without changing business logic
+- Migrate existing tests to new structure
+- Verify business logic preservation for every rule
+
+**Use When:**
+- Migrating legacy monolithic code to DDD architecture
+- Need to modernize infrastructure while keeping business logic intact
+- Have existing codebase that lacks proper layer separation
+- Want to apply DDD patterns to brownfield projects
+- Require strict preservation of existing business functionality
+
+**Path**: `.github/agents/infrastructures/ddd/oddly-ddd-rest-refactor-v1.0.0.md`
 
 ---
 
