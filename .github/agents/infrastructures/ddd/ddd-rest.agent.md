@@ -1,7 +1,7 @@
 ---
-name: Oddly's DDD-MVC Backend Agent (Strict Mode)
+name: oddly-ddd-rest-v2
 id: agent-ddd-rest-0a7f72f9
-version: 2.0.0
+version: 2.1.0
 description: >
   Build REST backends using DDD + MVC with MANDATORY separation of layers and object types.
   These are REQUIREMENTS, not suggestions. Custom standards override ALL language conventions.
@@ -68,7 +68,9 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 - [ ] I understand: Mappers REQUIRED in /application/mappers/ for all transformations
 - [ ] I understand: Repositories map Entity internally, return BMO externally
 - [ ] I understand: Custom standards override C#/Java/framework conventions
-- [ ] I understand: Interfaces in parent dir, implementations in /impl/
+- [ ] I understand: Services/Repositories - interfaces in root, implementations in /impl/
+- [ ] I understand: Mappers - implementations in root (no /impl/ needed)
+- [ ] I understand: Infrastructure abstractions (BaseRepository, IMapper) go in /infra/
 
 ---
 
@@ -82,7 +84,9 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 ❌ **Following framework conventions over custom standards** - OUR standards win
 ❌ **ServiceExceptions in /application/services/** - MUST be in `/application/errors/`
 ❌ **Committing build artifacts** - bin/, obj/, *.dll, *.exe, node_modules/, etc.
-❌ **Mixing interfaces/implementations in same directory** - Interfaces in parent, impls in /impl/
+❌ **Mixing service/repository interfaces with implementations** - Interfaces in root, impls in /impl/
+❌ **Creating /impl/ for Mappers** - Mappers have no autowiring contracts, keep in root
+❌ **Putting infrastructure abstractions with implementations** - BaseRepository, IMapper go in /infra/
 ❌ **Mixing ReadEntities and WriteEntities** - Separate /write/ and /read/ directories
 ❌ **Using WriteEntity for queries or ReadEntity for commands** - Strict separation required
 ❌ **Single repository for read/write** - MUST separate ICommandRepository and IQueryRepository
@@ -157,17 +161,19 @@ node_modules/, packages/, __pycache__/, *.egg-info/
     /dto/              # Request/Response DTOs
     /middleware/       # Security, UnitOfWork, auth, logging, errors
   /application/
-    /services/         # Use-cases, transaction boundaries
-      /impl/           # Service implementations
-    /mappers/          # DTO↔BMO↔Entity (MANDATORY)
+    /services/         # Service interfaces (I{Feature}Service)
+      /impl/           # Service implementations ({Feature}Service)
+    /mappers/          # Mapper implementations (no /impl/ - no autowiring contracts)
+      /infra/          # Infrastructure abstractions (IMapper interface, BaseMapper)
     /policies/         # Authorization, domain policies
     /errors/           # Service-scoped errors
   /domain/
     /models/           # BMOs with behavior (NO DB ATTRIBUTES)
     /events/           # Domain events
   /infrastructure/
-    /repositories/     # DB access interfaces
-      /impl/           # Repository implementations
+    /repositories/     # Repository interfaces (ICommandRepository, IQueryRepository)
+      /impl/           # Repository implementations (concrete repos)
+      /infra/          # Infrastructure abstractions (BaseRepository)
     /persistence/      # Entities, contexts, migrations
       /write/          # WriteEntities for commands
       /read/           # ReadEntities for queries
@@ -182,10 +188,24 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 
 **Namespace MUST follow folder structure.**
 
-## Interface/Implementation Separation:
-- Interfaces: Main directory (e.g., `/application/services/I{Feature}Service`)
-- Implementations: `/impl/` subdirectory (e.g., `/application/services/impl/{Feature}Service`)
-- MUST: Interface names start with `I`
+## Interface/Implementation/Abstraction Separation (MANDATORY):
+
+### For Services & Repositories (with autowiring contracts):
+- **Interfaces**: Root directory (e.g., `/application/services/I{Feature}Service`)
+- **Implementations**: `/impl/` subdirectory (e.g., `/application/services/impl/{Feature}Service`)
+- **MUST**: Interface names start with `I`
+
+### For Mappers (NO autowiring contracts):
+- **Implementations**: Root directory (e.g., `/application/mappers/{Feature}Mapper`)
+- **MUST NOT**: Create `/impl/` subdirectory for mappers
+- **Reason**: Mappers don't have autowiring contracts like services
+
+### For Infrastructure Abstractions:
+- **Base Classes/Interfaces**: `/infra/` subdirectory
+- **Examples**: 
+  - `/application/mappers/infra/IMapper` - Mapper interface
+  - `/infrastructure/repositories/infra/BaseRepository` - Base repository class
+- **Purpose**: Generic abstractions used across multiple implementations
 
 ---
 
@@ -228,8 +248,15 @@ public class {Feature}ReadEntity {
     [BsonElement("computed_field")] public string ComputedField { get; set; }
 }
 
-// /application/mappers/{Feature}Mapper.cs
-public class {Feature}Mapper {
+// /application/mappers/infra/IMapper.cs - Infrastructure abstraction
+public interface IMapper<TDto, TModel, TWriteEntity, TReadEntity> {
+    TModel ToModel(TWriteEntity p_entity);
+    TWriteEntity ToWriteEntity(TModel p_model);
+    TDto ToResponse(TReadEntity p_entity);
+}
+
+// /application/mappers/{Feature}Mapper.cs - Implementation in root (no /impl/)
+public class {Feature}Mapper : IMapper<{Feature}Response, {Feature}Model, {Feature}WriteEntity, {Feature}ReadEntity> {
     public {Feature}Model ToModel({Feature}WriteEntity p_entity) { }
     public {Feature}WriteEntity ToWriteEntity({Feature}Model p_model) { }
     public {Feature}Response ToResponse({Feature}ReadEntity p_entity) { }
@@ -551,11 +578,13 @@ Front-End → REST API (per subdomain)
   /write/ - {Feature}WriteEntity - commands
   /read/ - {Feature}ReadEntity - queries
 /src/domain/models/ - {Feature}Model - NO DB attributes
-/src/application/mappers/ - {Feature}Mapper - MANDATORY
-/src/application/services/ - I{Feature}Service
-  /impl/ - {Feature}Service
-/src/infrastructure/repositories/ - ICommandRepository, IQueryRepository
-  /impl/ - CommandRepository, QueryRepository
+/src/application/mappers/ - {Feature}Mapper implementations (in root, no /impl/)
+  /infra/ - IMapper interface, BaseMapper abstractions
+/src/application/services/ - I{Feature}Service interfaces
+  /impl/ - {Feature}Service implementations
+/src/infrastructure/repositories/ - ICommandRepository, IQueryRepository interfaces
+  /impl/ - CommandRepository, QueryRepository implementations
+  /infra/ - BaseRepository, common abstractions
 /src/api/dto/v1/ - Request, Response
 /src/api/controllers/ - Controller
 /src/api/middleware/ - OwnershipMiddleware, UnitOfWorkMiddleware
@@ -580,16 +609,18 @@ Front-End → REST API (per subdomain)
 7. ✅ MUST use Model suffix for domain classes
 8. ✅ MUST follow exact filesystem structure
 9. ✅ MUST prioritize custom standards over framework conventions
-10. ✅ MUST separate interfaces from implementations (/impl subdirectory)
-11. ✅ MUST separate Command and Query repositories
-12. ✅ MUST implement OwnershipMiddleware
-13. ✅ MUST implement UnitOfWorkMiddleware
-14. ✅ MUST use domain events with `{Object}{Action}Event` pattern
-15. ✅ MUST abstract queue with IEventPublisher/IEventSubscriber
-16. ✅ MUST use REST ONLY for front-end (NOT subdomain-to-subdomain)
-17. ✅ MUST use domain events for ALL subdomain-to-subdomain communication
-18. ✅ MUST follow standard HTTP error response contract
-19. ✅ MUST map ServiceException codes to HTTP status codes
-20. ✅ MUST NOT make HTTP calls between subdomains or share databases
+10. ✅ MUST separate service/repository interfaces from implementations (/impl subdirectory)
+11. ✅ MUST keep mapper implementations in root (NO /impl/ for mappers - no autowiring contracts)
+12. ✅ MUST put infrastructure abstractions (BaseRepository, IMapper) in /infra/ subdirectory
+13. ✅ MUST separate Command and Query repositories
+14. ✅ MUST implement OwnershipMiddleware
+15. ✅ MUST implement UnitOfWorkMiddleware
+16. ✅ MUST use domain events with `{Object}{Action}Event` pattern
+17. ✅ MUST abstract queue with IEventPublisher/IEventSubscriber
+18. ✅ MUST use REST ONLY for front-end (NOT subdomain-to-subdomain)
+19. ✅ MUST use domain events for ALL subdomain-to-subdomain communication
+20. ✅ MUST follow standard HTTP error response contract
+21. ✅ MUST map ServiceException codes to HTTP status codes
+22. ✅ MUST NOT make HTTP calls between subdomains or share databases
 
 **If you violate any of these rules, you have failed the task.**
