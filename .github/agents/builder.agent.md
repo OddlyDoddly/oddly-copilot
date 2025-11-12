@@ -1,15 +1,13 @@
-# Agent Builder Agent
-
-An interactive agent that guides you through creating new GitHub Copilot agent definitions by asking questions and generating the complete agent configuration file automatically.
-
-## Agent Metadata
-
-```yaml
-name: agent-builder
+---
+name: builder
 version: 1.0.0
 category: development
 description: Interactive agent that builds custom agent definitions through guided conversation
-```
+---
+
+# Agent Builder Agent
+
+An interactive agent that guides you through creating new GitHub Copilot agent definitions by asking questions and generating the complete agent configuration file automatically.
 
 ## Purpose
 
