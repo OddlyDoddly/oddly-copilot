@@ -85,6 +85,59 @@ See the `examples/` directory for sample agent implementations that demonstrate:
 5. **Testing**: Validate agent behavior with various scenarios
 6. **Documentation**: Include clear documentation for each agent
 
+## Agent Catalog
+
+This is a catalog of all available agents in this repository. Each agent has a unique identifier for tracking and updates.
+
+### Agent Builder
+**ID**: `agent-agent-builder-37bb1763`  
+**Category**: Development  
+**Version**: 2.0.0  
+**Status**: Active
+
+An interactive agent that guides you through creating new GitHub Copilot agent definitions by asking questions and generating complete configuration files automatically. This agent also maintains standardized documentation for all agents in the repository.
+
+**Key Capabilities:**
+- Interactive guided agent creation through conversation
+- Generates agents with strict enforcement patterns (MANDATORY language)
+- Creates unique tracking IDs for all agents
+- Automatically generates and updates agent documentation in README.md
+- Ensures all generated agents include Anti-Patterns, Pre-flight Checklists, and Final Reminders
+
+**Use When:**
+- Creating a new agent definition from scratch
+- Want guidance on what information to include in an agent
+- Need automated documentation generation for agents
+- Prefer interactive conversation over manual file editing
+
+**Path**: `.github/agents/agent-builder.agent.md`
+
+---
+
+### DDD REST Backend Agent
+**ID**: `agent-ddd-rest-0a7f72f9`  
+**Category**: Development  
+**Version**: 1.0.0  
+**Status**: Active
+
+Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller (MVC) architecture. Enforces mandatory separation of layers and strict architectural patterns with zero deviation allowed.
+
+**Key Capabilities:**
+- Generate services following DDD + MVC architecture
+- Enforce strict layer separation (Domain, Application, Infrastructure)
+- Implement repository patterns with proper abstraction
+- Apply custom standards that override language/framework conventions
+
+**Use When:**
+- Building new REST API backends
+- Need strict architectural enforcement
+- Working with TypeScript/Node.js, C#, or Java backend services
+- Require Domain-Driven Design patterns
+
+**Path**: `.github/agents/infrastructures/ddd/ddd-rest.agent.md`
+
+---
+
 ## Contributing
 
 When adding new agents:
