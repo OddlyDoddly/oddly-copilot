@@ -1,13 +1,14 @@
 ---
-name: oddly-ddd-rest-refactor-v1.0.0
+name: oddly-ddd-rest-refactor-v1.1.0
 id: agent-ddd-rest-refactor-da8c8190
-version: 1.0.0
+version: 1.1.0
 description: >
-  Refactor legacy code to DDD + MVC REST architecture by copying pre-approved infrastructure, preserving ALL business logic, and applying MANDATORY architectural standards. These are REQUIREMENTS, not suggestions.
+  Refactor legacy code to DDD + MVC REST architecture by copying pre-approved infrastructure, preserving ALL business logic, and applying MANDATORY architectural standards. Supports multiple subdomains in monolithic repositories. These are REQUIREMENTS, not suggestions.
 goals:
   - Migrate legacy code to DDD REST standards with zero business logic changes
   - All rules are MANDATORY - treat every instruction as a hard requirement
   - Preserve 100% of existing business logic while restructuring infrastructure only
+  - Support multiple business subdomains in a single monolithic repository
 defaults:
   language: auto-detected from legacy code
   http_framework: nest-like (or matched to legacy framework)
@@ -17,6 +18,7 @@ defaults:
   cache: none (unless in legacy)
   test_style: "preserve existing tests; adapt to new structure"
   api_style: rest
+  subdomain_strategy: single (auto-detect multiple if found)
 style:
   lines_max: 120
   prefer_vertical_space: true
@@ -39,8 +41,16 @@ Every rule is a **MUST** unless explicitly marked optional. These custom standar
 You are performing an **INFRASTRUCTURE REFACTOR ONLY**. This means:
 - ✅ Change file structure, layer separation, naming patterns
 - ✅ Add mappers, repositories, proper abstraction layers
+- ✅ Create separate subdomain folders when multiple business domains exist
 - ❌ **NEVER** change business rules, calculations, validations, or workflows
 - ❌ **NEVER** modify what the code does functionally
+
+**MONOLITHIC REPOSITORY WITH MULTIPLE SUBDOMAINS:**
+When a legacy codebase contains multiple business subdomains (e.g., Orders, Inventory, Billing), this agent MUST:
+- Create a root folder for EACH subdomain
+- Copy the full infrastructure template into EACH subdomain folder
+- Treat each subdomain as an independent sub-application with its own infrastructure
+- Maintain one repository but multiple self-contained subdomain applications
 
 **DO NOT:**
 - Change business logic, calculations, or domain rules
@@ -48,6 +58,7 @@ You are performing an **INFRASTRUCTURE REFACTOR ONLY**. This means:
 - Add new features or modify existing behavior
 - Skip the infrastructure copy step
 - Leave business logic in controllers or repositories
+- Mix business logic from different subdomains in the same folder structure
 
 ## 🚨 STEP 0: Pre-Refactor Checklist (MANDATORY BEFORE ANY CHANGES) 🚨
 
@@ -58,12 +69,31 @@ You are performing an **INFRASTRUCTURE REFACTOR ONLY**. This means:
 - [ ] Identify framework being used (Express, NestJS, Spring Boot, ASP.NET, Flask, etc.)
 - [ ] Document detected language and framework in refactor plan
 
-### 2. Clone Infrastructure Repository (REQUIRED)
+### 2. Subdomain Analysis (REQUIRED)
+**CRITICAL: Determine if the legacy codebase contains multiple business subdomains**
+
+Examine the legacy code to identify distinct business domains:
+- [ ] Identify separate business contexts (e.g., Orders, Inventory, Users, Billing, Shipping)
+- [ ] Look for bounded contexts: separate data models, separate business rules, separate endpoints
+- [ ] Document each subdomain found with its responsibilities
+- [ ] Decide: Single domain OR Multiple subdomains?
+
+**Examples of Multiple Subdomains:**
+- E-commerce: Orders subdomain, Inventory subdomain, Payments subdomain
+- ERP: HR subdomain, Finance subdomain, Operations subdomain
+- SaaS: Authentication subdomain, Billing subdomain, Core-App subdomain
+
+**If MULTIPLE subdomains are identified:**
+- [ ] List each subdomain name (e.g., "orders", "inventory", "billing")
+- [ ] Document which parts of legacy code belong to each subdomain
+- [ ] Plan to create root folder for EACH subdomain
+
+### 3. Clone Infrastructure Repository (REQUIRED)
 ```bash
 git clone https://github.com/OddlyDoddly/oddly-infrastructures.git /tmp/oddly-infrastructures
 ```
 
-### 3. Create Legacy Backup (REQUIRED)
+### 4. Create Legacy Backup (REQUIRED)
 ```bash
 # Move ALL existing code to /legacy subfolder
 mkdir -p ./legacy
@@ -71,21 +101,48 @@ mkdir -p ./legacy
 find . -maxdepth 1 -not -name '.' -not -name '..' -not -name '.git' -not -name '.gitignore' -not -name 'README.md' -not -name 'legacy' -exec mv {} ./legacy/ \;
 ```
 
-### 4. Copy Language-Specific Infrastructure (REQUIRED)
-**Based on detected language, copy the appropriate infrastructure:**
+### 5. Copy Language-Specific Infrastructure (REQUIRED)
 
+**FOR SINGLE SUBDOMAIN (traditional approach):**
+Copy infrastructure to repository root:
 - **C#**: `cp -r /tmp/oddly-infrastructures/infrastructures/ddd/CSharp/* ./`
 - **Java**: `cp -r /tmp/oddly-infrastructures/infrastructures/ddd/Java/* ./`
 - **Python**: `cp -r /tmp/oddly-infrastructures/infrastructures/ddd/Python/* ./`
 - **TypeScript**: `cp -r /tmp/oddly-infrastructures/infrastructures/ddd/TypeScript/* ./`
 
-### 5. Verify Infrastructure (REQUIRED)
+**FOR MULTIPLE SUBDOMAINS:**
+Create a root folder for EACH subdomain and copy infrastructure into EACH:
+
+```bash
+# Example: 3 subdomains (orders, inventory, billing)
+mkdir -p ./orders ./inventory ./billing
+
+# Copy infrastructure template to EACH subdomain folder
+cp -r /tmp/oddly-infrastructures/infrastructures/ddd/TypeScript/* ./orders/
+cp -r /tmp/oddly-infrastructures/infrastructures/ddd/TypeScript/* ./inventory/
+cp -r /tmp/oddly-infrastructures/infrastructures/ddd/TypeScript/* ./billing/
+
+# Each subdomain is now a self-contained DDD application
+```
+
+**CRITICAL:** Each subdomain folder MUST have its OWN complete copy of the infrastructure template.
+
+### 6. Verify Infrastructure (REQUIRED)
+
+**FOR SINGLE SUBDOMAIN:**
 - [ ] Base classes exist (BaseEntity, BaseModel, BaseRepository, etc.)
 - [ ] Middleware exists (UnitOfWork, Ownership, etc.)
 - [ ] Configuration templates present
 - [ ] Test infrastructure available
 
-### 6. Analyze Legacy Code (REQUIRED)
+**FOR MULTIPLE SUBDOMAINS:**
+For EACH subdomain folder, verify:
+- [ ] Base classes exist in `{subdomain}/src/infrastructure/persistence/infra/`
+- [ ] Middleware exists in `{subdomain}/src/api/middleware/`
+- [ ] Configuration templates present in `{subdomain}/`
+- [ ] Test infrastructure available in `{subdomain}/tests/`
+
+### 7. Analyze Legacy Code (REQUIRED)
 Document the following about the legacy code:
 - [ ] **Endpoints**: List all HTTP endpoints and their methods
 - [ ] **Business Logic**: Identify where business rules live
@@ -94,6 +151,7 @@ Document the following about the legacy code:
 - [ ] **External Dependencies**: Third-party APIs, queues, caches
 - [ ] **Business Validation Rules**: What validations exist?
 - [ ] **Calculations**: Any business calculations or formulas?
+- [ ] **Subdomain Mapping**: Which endpoints/models belong to which subdomain (if multiple)
 
 ### 7. Create .gitignore (REQUIRED)
 ```
@@ -121,11 +179,18 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 - [ ] Legacy code backed up in `/legacy` subfolder
 - [ ] oddly-infrastructures repository cloned to /tmp/oddly-infrastructures
 - [ ] Language detected (C#, Java, Python, or TypeScript)
-- [ ] Pre-approved infrastructure copied from oddly-infrastructures repository
+- [ ] Subdomain analysis completed: Single OR Multiple subdomains identified
+- [ ] For multiple subdomains: Each subdomain identified and documented
+- [ ] For multiple subdomains: Root folder created for EACH subdomain
+- [ ] Pre-approved infrastructure copied from oddly-infrastructures repository (to root OR to each subdomain folder)
 - [ ] Base infrastructure files verified present (BaseEntity, BaseRepository, middleware, etc.)
+- [ ] For multiple subdomains: Infrastructure verified in EACH subdomain folder
 - [ ] Legacy code analysis completed and documented
+- [ ] For multiple subdomains: Legacy code mapped to specific subdomains
 - [ ] I understand: ALL business logic must remain EXACTLY as it is in legacy
 - [ ] I understand: This is infrastructure refactor ONLY
+- [ ] I understand: Multiple subdomains = Multiple root folders with complete infrastructure copies
+- [ ] I understand: Each subdomain is a self-contained application within the monolithic repository
 - [ ] I understand: BMOs in /domain/models/ MUST NOT have database attributes
 - [ ] I understand: Entities in /infrastructure/persistence/ MUST end with "Entity" suffix
 - [ ] I understand: WriteEntities (commands) vs ReadEntities (queries) separation
@@ -172,6 +237,14 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 ❌ **Date/time fields without `Utc` suffix** - ALL date/time properties MUST end with `Utc`
 ❌ **Variables with units missing the unit** - Variables representing measurements MUST include unit
 
+## Multi-Subdomain Violations (CRITICAL for multiple subdomain scenarios):
+❌ **Not identifying subdomains in legacy code** - MUST analyze for multiple business domains first
+❌ **Copying infrastructure only once for multiple subdomains** - MUST copy to EACH subdomain folder
+❌ **Mixing subdomain code in a single structure** - Each subdomain MUST be in its own root folder
+❌ **Incomplete infrastructure in subdomain folders** - Each subdomain MUST have complete infrastructure copy
+❌ **Sharing infrastructure files between subdomains** - Each subdomain is independent with its own infrastructure
+❌ **Not documenting subdomain boundaries** - MUST clearly define what belongs to each subdomain
+
 ## Process Violations:
 ❌ **Not documenting legacy code structure first** - MUST understand before changing
 ❌ **Deleting legacy code instead of moving to /legacy** - MUST preserve original
@@ -200,52 +273,34 @@ cat ./legacy/package.json || cat ./legacy/pom.xml || cat ./legacy/requirements.t
 - Testing framework
 
 ### Step 1.2: Map Legacy Structure
-**Create a detailed map of the legacy code:**
-
-```markdown
-## Legacy Code Structure Analysis
-
-### Endpoints
-1. POST /api/users - Creates user
-2. GET /api/users/:id - Gets user
-...
-
-### Business Logic Location
-- User validation: legacy/controllers/UserController.js line 45-67
-- Email verification: legacy/services/EmailService.js line 23-89
-- Payment calculation: legacy/utils/PaymentCalculator.js line 12-45
-
-### Data Models
-- User: { id, email, name, createdAt, role }
-- Order: { id, userId, total, items[], status }
-
-### Critical Business Rules
-1. Email must be unique (UserController.js:52)
-2. Payment total = sum(items.price * items.quantity) * (1 - discount) (PaymentCalculator.js:34)
-3. Users can only view their own orders (OrderController.js:78)
-```
+Document: All endpoints, business logic locations (file:line), data models, critical business rules. This analysis is MANDATORY and guides the refactor.
 
 ### Step 1.3: Extract Business Logic Patterns
-**Identify and document each piece of business logic:**
-
-For each business rule, document:
-- **What it does** (the business rule)
-- **Where it lives** (file and line numbers)
-- **Input/Output** (what goes in, what comes out)
-- **Dependencies** (what it calls)
-
-**This documentation is MANDATORY and will guide the refactor.**
+For each business rule, document what it does, where it lives, inputs/outputs, dependencies.
 
 ## Phase 2: Infrastructure Setup (REQUIRED)
 
 ### Step 2.1: Copy Pre-Approved Infrastructure
+
+**FOR SINGLE SUBDOMAIN:**
 Already completed in Step 0. Verify again:
 ```bash
 ls -la ./src/infrastructure/persistence/infra/BaseEntity.*
 ls -la ./src/api/middleware/UnitOfWorkMiddleware.*
 ```
 
+**FOR MULTIPLE SUBDOMAINS:**
+Verify infrastructure in EACH subdomain folder:
+```bash
+# Example: For subdomains orders, inventory, billing
+ls -la ./orders/src/infrastructure/persistence/infra/BaseEntity.*
+ls -la ./inventory/src/infrastructure/persistence/infra/BaseEntity.*
+ls -la ./billing/src/infrastructure/persistence/infra/BaseEntity.*
+```
+
 ### Step 2.2: Create Directory Structure
+
+**FOR SINGLE SUBDOMAIN:**
 Ensure the following DDD structure exists (from copied infrastructure):
 ```
 /src/
@@ -282,6 +337,45 @@ Ensure the following DDD structure exists (from copied infrastructure):
       /infra/
 ```
 
+**FOR MULTIPLE SUBDOMAINS:**
+Each subdomain folder MUST have the complete structure:
+```
+/orders/                    # Subdomain 1
+  /src/
+    /api/
+    /application/
+    /domain/
+    /infrastructure/
+  /tests/
+  
+/inventory/                 # Subdomain 2
+  /src/
+    /api/
+    /application/
+    /domain/
+    /infrastructure/
+  /tests/
+  
+/billing/                   # Subdomain 3
+  /src/
+    /api/
+    /application/
+    /domain/
+    /infrastructure/
+  /tests/
+
+/legacy/                    # Original code backup
+```
+
+**CRITICAL:** Each subdomain is a self-contained DDD application with its own:
+- Controllers and DTOs
+- Services and Mappers
+- Domain Models
+- Repositories and Entities
+- Tests
+
+Subdomains are INDEPENDENT and do NOT share code at the infrastructure level.
+
 ## Phase 3: Extract and Preserve Business Logic (CRITICAL)
 
 **This is the most important phase. You MUST preserve all business logic exactly.**
@@ -296,245 +390,49 @@ Ensure the following DDD structure exists (from copied infrastructure):
 - Preserve ALL calculations and formulas
 - Maintain ALL invariants and constraints
 
-**Example:**
+**Example (condensed):**
 ```typescript
-// Legacy (./legacy/models/User.js)
-class User {
-  id: string;
-  email: string;
-  name: string;
-  
-  isEmailValid(): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email);
-  }
-  
-  calculateAge(birthDate: Date): number {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  }
-}
-
-// NEW: /src/domain/models/UserModel.ts
-// PRESERVE THE EXACT BUSINESS LOGIC
+// Legacy: User.isEmailValid(), User.calculateAge(birthDate) methods
+// NEW /src/domain/models/UserModel.ts - PRESERVE EXACT business logic
 export class UserModel {
-  private _id: string;
-  private _email: string;
-  private _name: string;
-  
-  constructor(id: string, email: string, name: string) {
-    this._id = id;
-    this._email = email;
-    this._name = name;
-  }
-  
-  // PRESERVED: Exact same validation logic
-  isEmailValid(): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this._email);
-  }
-  
-  // PRESERVED: Exact same calculation logic
-  calculateAge(birthDate: Date): number {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  }
-  
-  // Getters (infrastructure only, no business logic)
-  get id(): string { return this._id; }
-  get email(): string { return this._email; }
-  get name(): string { return this._name; }
+  // All business validation/calculation methods preserved identically
+  isEmailValid(): boolean { /* exact legacy logic */ }
+  calculateAge(birthDate: Date): number { /* exact legacy logic */ }
 }
 ```
 
 ### Step 3.2: Create Entities (Persistence Layer)
 **Create WriteEntity and ReadEntity for database mapping**
 
-```typescript
-// NEW: /src/infrastructure/persistence/write/UserWriteEntity.ts
-import { BaseWriteEntity } from '../infra/BaseWriteEntity';
-
-export class UserWriteEntity extends BaseWriteEntity {
-  email: string;
-  name: string;
-  // ORM annotations allowed here
-}
-
-// NEW: /src/infrastructure/persistence/read/UserReadEntity.ts
-import { BaseReadEntity } from '../infra/BaseReadEntity';
-
-export class UserReadEntity extends BaseReadEntity {
-  email: string;
-  name: string;
-  // Optimized for queries
-}
-```
+Entities extend Base classes and contain ONLY data fields (no business logic):
+- WriteEntity in `/infrastructure/persistence/write/` - for commands
+- ReadEntity in `/infrastructure/persistence/read/` - for queries
 
 ### Step 3.3: Create Mappers
 **Map between layers WITHOUT changing business logic**
 
-```typescript
-// NEW: /src/application/mappers/UserMapper.ts
-export class UserMapper {
-  toModelFromRequest(dto: CreateUserRequest): UserModel {
-    // Transform DTO → Model (no business logic change)
-    return new UserModel(dto.id, dto.email, dto.name);
-  }
-  
-  toWriteEntity(model: UserModel): UserWriteEntity {
-    // Transform Model → Entity (no business logic change)
-    const entity = new UserWriteEntity();
-    entity.email = model.email;
-    entity.name = model.name;
-    return entity;
-  }
-  
-  toResponseFromReadEntity(entity: UserReadEntity): UserResponse {
-    // Transform Entity → Response (no business logic change)
-    return {
-      id: entity.id,
-      email: entity.email,
-      name: entity.name
-    };
-  }
-}
-```
+Mappers transform data shapes only:
+- DTO → Model: `toModelFromRequest()`
+- Model → Entity: `toWriteEntity()`
+- Entity → Response: `toResponseFromReadEntity()`
 
 ### Step 3.4: Extract Service Logic
 **Move business orchestration to services, preserving exact workflow**
 
 **CRITICAL: Copy the business logic flow EXACTLY from legacy**
 
-```typescript
-// Legacy (./legacy/controllers/UserController.js)
-async createUser(req, res) {
-  // Validation
-  if (!req.body.email || !req.body.name) {
-    return res.status(400).json({ error: 'Missing fields' });
-  }
-  
-  // Business logic
-  const existingUser = await db.users.findOne({ email: req.body.email });
-  if (existingUser) {
-    return res.status(409).json({ error: 'Email already exists' });
-  }
-  
-  // More business logic
-  const user = {
-    id: generateId(),
-    email: req.body.email,
-    name: req.body.name,
-    createdAt: new Date()
-  };
-  
-  await db.users.insert(user);
-  return res.status(201).json(user);
-}
-
-// NEW: /src/application/services/impl/UserService.ts
-// PRESERVE THE EXACT WORKFLOW
-export class UserService implements IUserService {
-  async createUser(model: UserModel): Promise<string> {
-    // PRESERVED: Same validation
-    if (!model.email || !model.name) {
-      throw new UserServiceException(
-        UserErrorCode.MissingFields,
-        'Missing fields'
-      );
-    }
-    
-    // PRESERVED: Same uniqueness check
-    const existingUser = await this._queryRepo.FindByEmailAsync(model.email);
-    if (existingUser) {
-      throw new UserServiceException(
-        UserErrorCode.EmailExists,
-        'Email already exists'
-      );
-    }
-    
-    // PRESERVED: Same creation logic
-    const userId = await this._commandRepo.SaveAsync(model);
-    
-    return userId;
-  }
-}
-```
+Services contain orchestration logic - the SAME validations, checks, and workflows from legacy code, just restructured to use repositories instead of direct DB access. PRESERVE: validation rules, business checks, error conditions, workflow steps.
 
 ## Phase 4: Create Infrastructure Layers (REQUIRED)
 
-### Step 4.1: Create DTOs (Request/Response)
-Match legacy API contracts exactly:
-
-```typescript
-// NEW: /src/api/dto/requests/CreateUserRequest.ts
-export class CreateUserRequest {
-  email: string;
-  name: string;
-  // Match legacy request structure exactly
-}
-
-// NEW: /src/api/dto/responses/UserResponse.ts
-export class UserResponse {
-  id: string;
-  email: string;
-  name: string;
-  createdAtUtc: string;  // Note: Utc suffix
-  // Match legacy response structure exactly
-}
-```
+### Step 4.1: Create DTOs
+Match legacy API contracts exactly. Requests/Responses in `/api/dto/`. Include `Utc` suffix on date fields.
 
 ### Step 4.2: Create Repositories
-**Implement repository pattern for data access**
-
-```typescript
-// NEW: /src/infrastructure/repositories/IUserCommandRepository.ts
-export interface IUserCommandRepository {
-  SaveAsync(model: UserModel): Promise<string>;
-  UpdateAsync(model: UserModel): Promise<void>;
-  DeleteAsync(id: string): Promise<void>;
-}
-
-// NEW: /src/infrastructure/repositories/impl/UserCommandRepository.ts
-export class UserCommandRepository implements IUserCommandRepository {
-  async SaveAsync(model: UserModel): Promise<string> {
-    // Map Model → WriteEntity
-    const entity = this._mapper.toWriteEntity(model);
-    // Save to database
-    return await this._dbContext.save(entity);
-  }
-}
-```
+Interfaces in `/infrastructure/repositories/`, implementations in `/impl/`. Repositories map Model ↔ Entity internally, expose Model externally to Services. CommandRepo uses WriteEntity, QueryRepo uses ReadEntity.
 
 ### Step 4.3: Create Controllers
-**Thin controllers that delegate to services**
-
-```typescript
-// NEW: /src/api/controllers/UserController.ts
-export class UserController {
-  @Post('/users')
-  async create(@Body() request: CreateUserRequest): Promise<UserResponse> {
-    // Map Request → Model
-    const model = this._mapper.toModelFromRequest(request);
-    
-    // Delegate to service (where business logic lives)
-    const userId = await this._service.createUser(model);
-    
-    // Fetch for response
-    const entity = await this._queryRepo.FindByIdAsync(userId);
-    
-    // Map Entity → Response
-    return this._mapper.toResponseFromReadEntity(entity);
-  }
-}
-```
+Thin controllers in `/api/controllers/`. Responsibilities: bind request → DTO, call service, map response. NO business logic in controllers.
 
 ## Phase 5: Verification (MANDATORY)
 
@@ -607,7 +505,9 @@ diff -u ./legacy/services/PaymentCalculator.js <(extract-logic-from-new-service)
 
 ---
 
-# Project Structure (MANDATORY - Same as oddly-ddd-rest)
+# Project Structure (MANDATORY)
+
+## FOR SINGLE SUBDOMAIN (Same as oddly-ddd-rest):
 
 ```
 /legacy/                # Original code preserved here
@@ -647,6 +547,51 @@ diff -u ./legacy/services/PaymentCalculator.js <(extract-logic-from-new-service)
 /tests/
 ```
 
+## FOR MULTIPLE SUBDOMAINS (NEW - Monolithic Repository):
+
+```
+/legacy/                # Original code preserved here
+
+/orders/                # Orders subdomain (independent application)
+  /src/
+    /api/
+      /controllers/
+      /dto/
+      /middleware/
+    /application/
+      /services/
+      /mappers/
+    /domain/
+      /models/
+    /infrastructure/
+      /repositories/
+      /persistence/
+  /tests/
+
+/inventory/             # Inventory subdomain (independent application)
+  /src/
+    /api/
+    /application/
+    /domain/
+    /infrastructure/
+  /tests/
+
+/billing/               # Billing subdomain (independent application)
+  /src/
+    /api/
+    /application/
+    /domain/
+    /infrastructure/
+  /tests/
+```
+
+**CRITICAL RULES FOR MULTIPLE SUBDOMAINS:**
+1. Each subdomain folder = complete DDD application
+2. Each subdomain has its own infrastructure copy (no sharing)
+3. Subdomains are independent and self-contained
+4. Legacy code is split into subdomain-specific implementations
+5. One monolithic repository, multiple independent subdomain applications
+
 ---
 
 # Naming Conventions (MANDATORY - Same as oddly-ddd-rest)
@@ -670,16 +615,18 @@ diff -u ./legacy/services/PaymentCalculator.js <(extract-logic-from-new-service)
 1. ✅ **Backup**: Move all code to `/legacy` folder
 2. ✅ **Clone**: Clone oddly-infrastructures repository
 3. ✅ **Detect**: Identify programming language
-4. ✅ **Copy**: Copy language-specific infrastructure
-5. ✅ **Analyze**: Document all legacy business logic
-6. ✅ **Extract**: Create Domain Models with preserved business logic
-7. ✅ **Create**: Build Entities (WriteEntity, ReadEntity)
-8. ✅ **Map**: Create Mappers (DTO ↔ Model ↔ Entity)
-9. ✅ **Service**: Extract business orchestration to Services (preserve workflow)
-10. ✅ **Repository**: Implement Repositories
-11. ✅ **Controller**: Create thin Controllers
-12. ✅ **Verify**: Confirm business logic preserved exactly
-13. ✅ **Test**: Migrate and run all tests
+4. ✅ **Analyze Subdomains**: Determine if single or multiple business subdomains exist
+5. ✅ **Create Folders**: For multiple subdomains, create root folder for each subdomain
+6. ✅ **Copy Infrastructure**: Copy language-specific infrastructure (to root OR each subdomain folder)
+7. ✅ **Analyze**: Document all legacy business logic (map to subdomains if multiple)
+8. ✅ **Extract**: Create Domain Models with preserved business logic (in appropriate subdomain)
+9. ✅ **Create**: Build Entities (WriteEntity, ReadEntity) per subdomain
+10. ✅ **Map**: Create Mappers (DTO ↔ Model ↔ Entity) per subdomain
+11. ✅ **Service**: Extract business orchestration to Services (preserve workflow) per subdomain
+12. ✅ **Repository**: Implement Repositories per subdomain
+13. ✅ **Controller**: Create thin Controllers per subdomain
+14. ✅ **Verify**: Confirm business logic preserved exactly in all subdomains
+15. ✅ **Test**: Migrate and run all tests for all subdomains
 
 ---
 
@@ -689,15 +636,25 @@ diff -u ./legacy/services/PaymentCalculator.js <(extract-logic-from-new-service)
 
 1. **"What programming language is your legacy code written in? (C#, Java, Python, TypeScript, or other)"**
 
-2. **"Are there any specific business rules or calculations that are particularly critical and should be preserved exactly?"**
+2. **"Does your legacy codebase contain multiple distinct business subdomains? (e.g., Orders, Inventory, Billing, Users, etc.)"**
+   - If YES: **"Please list the subdomain names and their responsibilities"**
+   - If NO: Proceed with single-domain refactor
 
-3. **"Do you want to preserve the existing API endpoints exactly, or is it acceptable to modernize the endpoint structure?"**
+3. **"Are there any specific business rules or calculations that are particularly critical and should be preserved exactly?"**
 
-4. **"Should I migrate existing tests, or do you want to create new tests for the refactored structure?"**
+4. **"Do you want to preserve the existing API endpoints exactly, or is it acceptable to modernize the endpoint structure?"**
 
-5. **"Are there any parts of the legacy code that should NOT be migrated (deprecated features, tech debt, etc.)?"**
+5. **"Should I migrate existing tests, or do you want to create new tests for the refactored structure?"**
+
+6. **"Are there any parts of the legacy code that should NOT be migrated (deprecated features, tech debt, etc.)?"**
 
 **Document the answers and use them to guide the refactor.**
+
+**FOR MULTIPLE SUBDOMAINS:**
+After identifying subdomains, you MUST:
+- Confirm the subdomain list with the user
+- Verify which parts of legacy code belong to each subdomain
+- Plan the subdomain folder structure before copying infrastructure
 
 ---
 
@@ -705,6 +662,7 @@ diff -u ./legacy/services/PaymentCalculator.js <(extract-logic-from-new-service)
 
 ## Changelog
 
+- **1.1.0** (2025-11-12): Added multi-subdomain support - Agent now detects and handles multiple business subdomains in legacy monolithic applications, creating separate root folders with complete infrastructure copies for each subdomain
 - **1.0.0** (2025-11-12): Initial version - Refactor legacy code to DDD REST architecture with business logic preservation
 
 ---
@@ -716,29 +674,37 @@ diff -u ./legacy/services/PaymentCalculator.js <(extract-logic-from-new-service)
 1. ✅ MUST backup all legacy code to `/legacy` folder before any changes
 2. ✅ MUST clone oddly-infrastructures repository
 3. ✅ MUST detect programming language from legacy code
-4. ✅ MUST copy pre-approved infrastructure from oddly-infrastructures repository
-5. ✅ MUST verify infrastructure is present before refactoring
-6. ✅ MUST analyze and document ALL legacy business logic before refactoring
-7. ✅ MUST preserve 100% of business logic exactly as it exists in legacy
-8. ✅ MUST NOT change calculations, validations, or workflows
-9. ✅ MUST create detailed business logic map from legacy code
-10. ✅ MUST extract Domain Models (BMOs) with all business methods preserved
-11. ✅ MUST separate Entities (WriteEntity, ReadEntity) from Domain Models
-12. ✅ MUST create Mappers for all transformations
-13. ✅ MUST NOT put database attributes in /domain/models/
-14. ✅ MUST follow exact DDD project structure
-15. ✅ MUST use copied infrastructure as foundation
-16. ✅ MUST prioritize custom standards over framework conventions
-17. ✅ MUST separate service/repository interfaces from implementations
-18. ✅ MUST create /infra/ subdirectory in EVERY folder for base classes
-19. ✅ MUST include `Utc` suffix in ALL date/time field names
-20. ✅ MUST store ALL timestamps in UTC in the database
-21. ✅ MUST include units in variable names (e.g., `durationSeconds`, `lengthMeters`)
-22. ✅ MUST verify business logic preservation for EVERY business rule
-23. ✅ MUST maintain API contract compatibility with legacy
-24. ✅ MUST migrate existing tests to new structure
-25. ✅ MUST ask user for critical context before starting refactor
+4. ✅ MUST analyze for multiple business subdomains in legacy code
+5. ✅ MUST ask user to confirm subdomain list if multiple subdomains are identified
+6. ✅ FOR MULTIPLE SUBDOMAINS: MUST create a root folder for EACH subdomain
+7. ✅ FOR MULTIPLE SUBDOMAINS: MUST copy complete infrastructure to EACH subdomain folder
+8. ✅ FOR SINGLE SUBDOMAIN: Copy infrastructure to repository root
+9. ✅ MUST verify infrastructure is present before refactoring (in root OR each subdomain folder)
+10. ✅ MUST analyze and document ALL legacy business logic before refactoring
+11. ✅ FOR MULTIPLE SUBDOMAINS: MUST map legacy code to specific subdomains
+12. ✅ MUST preserve 100% of business logic exactly as it exists in legacy
+13. ✅ MUST NOT change calculations, validations, or workflows
+14. ✅ MUST create detailed business logic map from legacy code
+15. ✅ MUST extract Domain Models (BMOs) with all business methods preserved
+16. ✅ MUST separate Entities (WriteEntity, ReadEntity) from Domain Models
+17. ✅ MUST create Mappers for all transformations
+18. ✅ MUST NOT put database attributes in /domain/models/
+19. ✅ MUST follow exact DDD project structure (in root OR each subdomain)
+20. ✅ MUST use copied infrastructure as foundation
+21. ✅ MUST prioritize custom standards over framework conventions
+22. ✅ MUST separate service/repository interfaces from implementations
+23. ✅ MUST create /infra/ subdirectory in EVERY folder for base classes
+24. ✅ MUST include `Utc` suffix in ALL date/time field names
+25. ✅ MUST store ALL timestamps in UTC in the database
+26. ✅ MUST include units in variable names (e.g., `durationSeconds`, `lengthMeters`)
+27. ✅ MUST verify business logic preservation for EVERY business rule
+28. ✅ MUST maintain API contract compatibility with legacy
+29. ✅ MUST migrate existing tests to new structure
+30. ✅ MUST ask user for critical context before starting refactor
+31. ✅ FOR MULTIPLE SUBDOMAINS: Each subdomain is an independent application with complete infrastructure
+32. ✅ FOR MULTIPLE SUBDOMAINS: Do NOT share infrastructure code between subdomains
 
 **If you violate any of these rules, you have failed the task.**
 
 **REMEMBER: This is an INFRASTRUCTURE REFACTOR. Preserve ALL business logic EXACTLY.**
+**FOR MULTIPLE SUBDOMAINS: Create independent applications in separate root folders within one repository.**
