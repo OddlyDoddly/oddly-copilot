@@ -1,7 +1,7 @@
 ---
-name: oddly-ddd-rest-refactor-v1.1.0
+name: oddly-ddd-rest-refactor-v1.2.0
 id: agent-ddd-rest-refactor-da8c8190
-version: 1.1.0
+version: 1.2.0
 description: >
   Refactor legacy code to DDD + MVC REST architecture by copying pre-approved infrastructure, preserving ALL business logic, and applying MANDATORY architectural standards. Supports multiple subdomains in monolithic repositories. These are REQUIREMENTS, not suggestions.
 goals:
@@ -142,6 +142,51 @@ For EACH subdomain folder, verify:
 - [ ] Configuration templates present in `{subdomain}/`
 - [ ] Test infrastructure available in `{subdomain}/tests/`
 
+### 6.1. Delete Example Files (MANDATORY)
+
+**CRITICAL: After copying infrastructure and verifying it, you MUST delete all Example* class files.**
+
+These are template/demo files from the infrastructure that should NOT remain in your refactored project.
+
+**FOR SINGLE SUBDOMAIN:**
+```bash
+# Delete all Example files from src directory
+find ./src -type f -iname "*Example*" -delete
+
+# Verify Example files are removed
+find ./src -type f -iname "*Example*"
+# Should return no results
+```
+
+**FOR MULTIPLE SUBDOMAINS:**
+Delete Example files from EACH subdomain folder:
+```bash
+# Example: For subdomains orders, inventory, billing
+find ./orders/src -type f -iname "*Example*" -delete
+find ./inventory/src -type f -iname "*Example*" -delete
+find ./billing/src -type f -iname "*Example*" -delete
+
+# Verify Example files removed from all subdomains
+find ./orders/src -type f -iname "*Example*"
+find ./inventory/src -type f -iname "*Example*"
+find ./billing/src -type f -iname "*Example*"
+# All should return no results
+```
+
+**Files to delete include (but not limited to):**
+- ExampleController
+- ExampleService / IExampleService
+- ExampleRepository / IExampleCommandRepository / IExampleQueryRepository
+- ExampleMapper
+- ExampleModel
+- ExampleWriteEntity / ExampleReadEntity
+- ExampleServiceException
+- Example*Request / Example*Response (CreateExampleRequest, UpdateExampleRequest, ExampleResponse)
+- Example*Event (ExampleCreatedEvent, ExampleUpdatedEvent, ExampleDeletedEvent)
+- ExampleEventSubscriber
+
+**IF YOU SKIP THIS STEP, EXAMPLE FILES WILL CLUTTER YOUR PROJECT - YOU HAVE FAILED**
+
 ### 7. Analyze Legacy Code (REQUIRED)
 Document the following about the legacy code:
 - [ ] **Endpoints**: List all HTTP endpoints and their methods
@@ -153,7 +198,7 @@ Document the following about the legacy code:
 - [ ] **Calculations**: Any business calculations or formulas?
 - [ ] **Subdomain Mapping**: Which endpoints/models belong to which subdomain (if multiple)
 
-### 7. Create .gitignore (REQUIRED)
+### 8. Create .gitignore (REQUIRED)
 ```
 # Build outputs (MANDATORY)
 bin/, obj/, dist/, out/, build/, target/
@@ -185,6 +230,8 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 - [ ] Pre-approved infrastructure copied from oddly-infrastructures repository (to root OR to each subdomain folder)
 - [ ] Base infrastructure files verified present (BaseEntity, BaseRepository, middleware, etc.)
 - [ ] For multiple subdomains: Infrastructure verified in EACH subdomain folder
+- [ ] Example* files deleted after infrastructure copy (MANDATORY - for single domain AND all subdomains)
+- [ ] Verified no Example files remain (find returns nothing for all applicable directories)
 - [ ] Legacy code analysis completed and documented
 - [ ] For multiple subdomains: Legacy code mapped to specific subdomains
 - [ ] I understand: ALL business logic must remain EXACTLY as it is in legacy
@@ -223,6 +270,7 @@ node_modules/, packages/, __pycache__/, *.egg-info/
 ## Infrastructure Refactor Violations:
 ❌ **Skipping infrastructure copy step** - MUST start with pre-approved infrastructure from oddly-infrastructures
 ❌ **Not backing up legacy code to /legacy folder** - MUST create complete backup first
+❌ **Leaving Example* files in project after infrastructure copy** - MUST delete all Example files (ExampleService, ExampleEntity, ExampleModel, etc.) from all applicable directories
 ❌ **Starting refactor without analyzing legacy code** - MUST document existing structure first
 ❌ **Regenerating infrastructure that exists in copied base** - Use what's provided
 ❌ **Database attributes on /domain/models/ classes** - Domain models MUST be pure business logic
@@ -662,6 +710,7 @@ After identifying subdomains, you MUST:
 
 ## Changelog
 
+- **1.2.0** (2025-11-14): Added mandatory Example* file cleanup step after infrastructure copy - agents must now delete all Example class files (ExampleService, ExampleEntity, ExampleModel, etc.) from all applicable directories (single domain AND all subdomains) to prevent clutter in refactored projects
 - **1.1.0** (2025-11-12): Added multi-subdomain support - Agent now detects and handles multiple business subdomains in legacy monolithic applications, creating separate root folders with complete infrastructure copies for each subdomain
 - **1.0.0** (2025-11-12): Initial version - Refactor legacy code to DDD REST architecture with business logic preservation
 
@@ -680,29 +729,31 @@ After identifying subdomains, you MUST:
 7. ✅ FOR MULTIPLE SUBDOMAINS: MUST copy complete infrastructure to EACH subdomain folder
 8. ✅ FOR SINGLE SUBDOMAIN: Copy infrastructure to repository root
 9. ✅ MUST verify infrastructure is present before refactoring (in root OR each subdomain folder)
-10. ✅ MUST analyze and document ALL legacy business logic before refactoring
-11. ✅ FOR MULTIPLE SUBDOMAINS: MUST map legacy code to specific subdomains
-12. ✅ MUST preserve 100% of business logic exactly as it exists in legacy
-13. ✅ MUST NOT change calculations, validations, or workflows
-14. ✅ MUST create detailed business logic map from legacy code
-15. ✅ MUST extract Domain Models (BMOs) with all business methods preserved
-16. ✅ MUST separate Entities (WriteEntity, ReadEntity) from Domain Models
-17. ✅ MUST create Mappers for all transformations
-18. ✅ MUST NOT put database attributes in /domain/models/
-19. ✅ MUST follow exact DDD project structure (in root OR each subdomain)
-20. ✅ MUST use copied infrastructure as foundation
-21. ✅ MUST prioritize custom standards over framework conventions
-22. ✅ MUST separate service/repository interfaces from implementations
-23. ✅ MUST create /infra/ subdirectory in EVERY folder for base classes
-24. ✅ MUST include `Utc` suffix in ALL date/time field names
-25. ✅ MUST store ALL timestamps in UTC in the database
-26. ✅ MUST include units in variable names (e.g., `durationSeconds`, `lengthMeters`)
-27. ✅ MUST verify business logic preservation for EVERY business rule
-28. ✅ MUST maintain API contract compatibility with legacy
-29. ✅ MUST migrate existing tests to new structure
-30. ✅ MUST ask user for critical context before starting refactor
-31. ✅ FOR MULTIPLE SUBDOMAINS: Each subdomain is an independent application with complete infrastructure
-32. ✅ FOR MULTIPLE SUBDOMAINS: Do NOT share infrastructure code between subdomains
+10. ✅ MUST delete all Example* files immediately after copying infrastructure (MANDATORY for single domain AND all subdomains)
+11. ✅ MUST verify no Example files remain before proceeding with refactor
+12. ✅ MUST analyze and document ALL legacy business logic before refactoring
+13. ✅ FOR MULTIPLE SUBDOMAINS: MUST map legacy code to specific subdomains
+14. ✅ MUST preserve 100% of business logic exactly as it exists in legacy
+15. ✅ MUST NOT change calculations, validations, or workflows
+16. ✅ MUST create detailed business logic map from legacy code
+17. ✅ MUST extract Domain Models (BMOs) with all business methods preserved
+18. ✅ MUST separate Entities (WriteEntity, ReadEntity) from Domain Models
+19. ✅ MUST create Mappers for all transformations
+20. ✅ MUST NOT put database attributes in /domain/models/
+21. ✅ MUST follow exact DDD project structure (in root OR each subdomain)
+22. ✅ MUST use copied infrastructure as foundation
+23. ✅ MUST prioritize custom standards over framework conventions
+24. ✅ MUST separate service/repository interfaces from implementations
+25. ✅ MUST create /infra/ subdirectory in EVERY folder for base classes
+26. ✅ MUST include `Utc` suffix in ALL date/time field names
+27. ✅ MUST store ALL timestamps in UTC in the database
+28. ✅ MUST include units in variable names (e.g., `durationSeconds`, `lengthMeters`)
+29. ✅ MUST verify business logic preservation for EVERY business rule
+30. ✅ MUST maintain API contract compatibility with legacy
+31. ✅ MUST migrate existing tests to new structure
+32. ✅ MUST ask user for critical context before starting refactor
+33. ✅ FOR MULTIPLE SUBDOMAINS: Each subdomain is an independent application with complete infrastructure
+34. ✅ FOR MULTIPLE SUBDOMAINS: Do NOT share infrastructure code between subdomains
 
 **If you violate any of these rules, you have failed the task.**
 
