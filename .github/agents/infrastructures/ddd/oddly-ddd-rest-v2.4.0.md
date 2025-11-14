@@ -1,7 +1,7 @@
 ---
-name: oddly-ddd-rest-v2.3.0
+name: oddly-ddd-rest-v2.4.0
 id: agent-ddd-rest-0a7f72f9
-version: 2.3.0
+version: 2.4.0
 description: >
   Build REST backends using DDD + MVC with MANDATORY separation of layers and object types.
   These are REQUIREMENTS, not suggestions. Custom standards override ALL language conventions.
@@ -94,6 +94,40 @@ When creating a NEW project, you MUST copy the pre-approved infrastructure from 
    - Middleware implementations should be present
    - Configuration files should be in place
 
+6. **Delete Example Files (MANDATORY)**:
+   After copying infrastructure, you MUST delete all Example* class files. These are template/demo files that should NOT remain in your project.
+   
+   ```bash
+   # Delete all Example files (adjust path based on language)
+   # For C# (case-insensitive on Windows, use appropriate patterns)
+   find ./src -type f -iname "*Example*" -delete
+   
+   # For Java
+   find ./src -type f -name "*Example*" -delete
+   
+   # For TypeScript
+   find ./src -type f -name "*Example*" -delete
+   
+   # For Python
+   find ./src -type f -name "*example*" -delete
+   
+   # Verify Example files are removed
+   find ./src -type f -iname "*Example*"
+   # Should return no results
+   ```
+   
+   **Files to delete include (but not limited to):**
+   - ExampleController
+   - ExampleService / IExampleService
+   - ExampleRepository / IExampleCommandRepository / IExampleQueryRepository
+   - ExampleMapper
+   - ExampleModel
+   - ExampleWriteEntity / ExampleReadEntity
+   - ExampleServiceException
+   - Example*Request / Example*Response
+   - Example*Event (ExampleCreatedEvent, ExampleUpdatedEvent, ExampleDeletedEvent)
+   - ExampleEventSubscriber
+
 **This infrastructure includes:**
 - Base classes (BaseEntity, BaseModel, BaseRepository, etc.)
 - Middleware implementations (UnitOfWork, Ownership, etc.)
@@ -109,6 +143,7 @@ When creating a NEW project, you MUST copy the pre-approved infrastructure from 
 - **MUST NOT** regenerate infrastructure that already exists in the copied base
 - **MUST** extend and customize the copied infrastructure, not replace it
 - **MUST** verify infrastructure is present before proceeding
+- **MUST** delete all Example* files after copying infrastructure
 
 **Example Workflow:**
 
@@ -124,7 +159,13 @@ cp -r /tmp/oddly-infrastructures/infrastructures/ddd/CSharp/* ./
 ls -la ./src/infrastructure/persistence/infra/BaseEntity.cs
 ls -la ./src/api/middleware/UnitOfWorkMiddleware.cs
 
-# 5. Now proceed with feature-specific code generation
+# 5. Delete all Example* files (MANDATORY)
+find ./src -type f -iname "*Example*" -delete
+
+# 6. Verify Example files removed
+find ./src -type f -iname "*Example*"  # Should return nothing
+
+# 7. Now proceed with feature-specific code generation
 ```
 
 **IF YOU SKIP THIS STEP, YOU HAVE FAILED**
@@ -134,6 +175,8 @@ ls -la ./src/api/middleware/UnitOfWorkMiddleware.cs
 - [ ] .gitignore exists with all patterns above
 - [ ] Pre-approved infrastructure copied from oddly-infrastructures repository (for NEW projects)
 - [ ] Base infrastructure files verified present (BaseEntity, BaseRepository, middleware, etc.)
+- [ ] Example* files deleted after infrastructure copy (MANDATORY)
+- [ ] Verified no Example files remain in project (find ./src -iname "*Example*" returns nothing)
 - [ ] I understand: Use copied infrastructure as foundation, do NOT regenerate it
 - [ ] I understand: BMOs in /domain/models/ MUST NOT have database attributes
 - [ ] I understand: Entities in /infrastructure/persistence/ MUST end with "Entity" suffix
@@ -157,6 +200,7 @@ ls -la ./src/api/middleware/UnitOfWorkMiddleware.cs
 ❌ **Skipping infrastructure copy step** - NEW projects MUST start with pre-approved infrastructure from oddly-infrastructures
 ❌ **Regenerating infrastructure that exists in copied base** - Use what's provided, don't recreate
 ❌ **Starting new project without cloning oddly-infrastructures** - Foundation MUST come from approved repo
+❌ **Leaving Example* files in project after infrastructure copy** - MUST delete all Example files (ExampleService, ExampleEntity, ExampleModel, etc.)
 ❌ **Database attributes on /domain/models/ classes** - Domain models MUST be pure business logic
 ❌ **Returning Entity from Repository to Service** - Repositories MUST map Entity → BMO
 ❌ **Skipping Mapper layer** - ALL transformations require explicit mappers
@@ -616,42 +660,57 @@ Front-End → REST API (per subdomain)
 
 ---
 
+# Maintenance
+
+## Changelog
+
+- **2.4.0** (2025-11-14): Added mandatory Example* file cleanup step after infrastructure copy - agents must now delete all Example class files (ExampleService, ExampleEntity, ExampleModel, etc.) to prevent clutter in generated projects
+- **2.3.0** (Previous version): [Existing changes]
+- **2.2.0** (Previous version): [Existing changes]
+- **2.1.0** (Previous version): [Existing changes]
+- **2.0.0** (Previous version): [Existing changes]
+- **1.0.0** (Initial version): Initial release
+
+---
+
 # Final Reminders
 
 **THESE ARE REQUIREMENTS, NOT SUGGESTIONS:**
 
 1. ✅ MUST copy pre-approved infrastructure from oddly-infrastructures repository for NEW projects
-2. ✅ MUST verify infrastructure is present before generating feature code
-3. ✅ MUST use copied infrastructure as foundation, NOT regenerate it
-4. ✅ MUST separate BMOs (domain) from Entities (persistence)
-5. ✅ MUST create Mappers for all transformations
-6. ✅ MUST NOT put database attributes in /domain/models/
-7. ✅ MUST separate WriteEntities (commands) from ReadEntities (queries)
-8. ✅ MUST use WriteEntity suffix in /persistence/write/
-9. ✅ MUST use ReadEntity suffix in /persistence/read/
-10. ✅ MUST use Model suffix for domain classes
-11. ✅ MUST follow exact filesystem structure
-12. ✅ MUST prioritize custom standards over framework conventions
-13. ✅ MUST separate service/repository interfaces from implementations (/impl subdirectory)
-14. ✅ MUST keep implementations in root for objects WITHOUT contracts (Mappers, Queues, Controllers, DTOs)
-15. ✅ MUST create /infra/ subdirectory in EVERY folder for base classes and abstractions
-16. ✅ MUST put ServiceException in /application/errors/infra/ subdirectory
-17. ✅ MUST separate DTOs into /requests/ and /responses/ folders
-18. ✅ MUST put BaseRequest and BaseResponse in /api/dto/infra/
-19. ✅ MUST put IEventPublisher and IEventSubscriber in /infrastructure/queues/infra/
-20. ✅ MUST separate Command and Query repositories
-21. ✅ MUST implement OwnershipMiddleware
-22. ✅ MUST implement UnitOfWorkMiddleware
-23. ✅ MUST use domain events with `{Object}{Action}Event` pattern
-24. ✅ MUST abstract queue with IEventPublisher/IEventSubscriber in /infra/
-25. ✅ MUST use REST ONLY for front-end (NOT subdomain-to-subdomain)
-26. ✅ MUST use domain events for ALL subdomain-to-subdomain communication
-27. ✅ MUST follow standard HTTP error response contract
-28. ✅ MUST map ServiceException codes to HTTP status codes
-29. ✅ MUST NOT make HTTP calls between subdomains or share databases
-30. ✅ MUST include `Utc` suffix in ALL date/time field names (e.g., `createdAtUtc`, `scheduledTimeUtc`)
-31. ✅ MUST store ALL timestamps in UTC in the database
-32. ✅ MUST include units in variable names for all measurements (e.g., `durationSeconds`, `lengthMeters`, `weightKilograms`)
-33. ✅ MUST accept date/time inputs with timezone information and convert to UTC
+2. ✅ MUST delete all Example* files immediately after copying infrastructure (MANDATORY)
+3. ✅ MUST verify no Example files remain in project before proceeding
+4. ✅ MUST verify infrastructure is present before generating feature code
+5. ✅ MUST use copied infrastructure as foundation, NOT regenerate it
+6. ✅ MUST separate BMOs (domain) from Entities (persistence)
+7. ✅ MUST create Mappers for all transformations
+8. ✅ MUST NOT put database attributes in /domain/models/
+9. ✅ MUST separate WriteEntities (commands) from ReadEntities (queries)
+10. ✅ MUST use WriteEntity suffix in /persistence/write/
+11. ✅ MUST use ReadEntity suffix in /persistence/read/
+12. ✅ MUST use Model suffix for domain classes
+13. ✅ MUST follow exact filesystem structure
+14. ✅ MUST prioritize custom standards over framework conventions
+15. ✅ MUST separate service/repository interfaces from implementations (/impl subdirectory)
+16. ✅ MUST keep implementations in root for objects WITHOUT contracts (Mappers, Queues, Controllers, DTOs)
+17. ✅ MUST create /infra/ subdirectory in EVERY folder for base classes and abstractions
+18. ✅ MUST put ServiceException in /application/errors/infra/ subdirectory
+19. ✅ MUST separate DTOs into /requests/ and /responses/ folders
+20. ✅ MUST put BaseRequest and BaseResponse in /api/dto/infra/
+21. ✅ MUST put IEventPublisher and IEventSubscriber in /infrastructure/queues/infra/
+22. ✅ MUST separate Command and Query repositories
+23. ✅ MUST implement OwnershipMiddleware
+24. ✅ MUST implement UnitOfWorkMiddleware
+25. ✅ MUST use domain events with `{Object}{Action}Event` pattern
+26. ✅ MUST abstract queue with IEventPublisher/IEventSubscriber in /infra/
+27. ✅ MUST use REST ONLY for front-end (NOT subdomain-to-subdomain)
+28. ✅ MUST use domain events for ALL subdomain-to-subdomain communication
+29. ✅ MUST follow standard HTTP error response contract
+30. ✅ MUST map ServiceException codes to HTTP status codes
+31. ✅ MUST NOT make HTTP calls between subdomains or share databases
+32. ✅ MUST include `Utc` suffix in ALL date/time field names (e.g., `createdAtUtc`, `scheduledTimeUtc`)
+33. ✅ MUST store ALL timestamps in UTC in the database
+34. ✅ MUST include units in variable names for all measurements (e.g., `durationSeconds`, `lengthMeters`, `weightKilograms`)
+35. ✅ MUST accept date/time inputs with timezone information and convert to UTC
 
 **If you violate any of these rules, you have failed the task.**

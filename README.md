@@ -120,13 +120,14 @@ An interactive agent that guides you through creating new GitHub Copilot agent d
 ### DDD REST Backend Agent
 **ID**: `agent-ddd-rest-0a7f72f9`  
 **Category**: Development  
-**Version**: 2.3.0  
+**Version**: 2.4.0  
 **Status**: Active
 
-Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller (MVC) architecture. Enforces mandatory separation of layers and strict architectural patterns with zero deviation allowed. Includes strict requirements for UTC timezone handling and units in variable names. Automatically copies pre-approved infrastructure from oddly-infrastructures repository as starting base.
+Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller (MVC) architecture. Enforces mandatory separation of layers and strict architectural patterns with zero deviation allowed. Includes strict requirements for UTC timezone handling and units in variable names. Automatically copies pre-approved infrastructure from oddly-infrastructures repository as starting base and removes Example* template files.
 
 **Key Capabilities:**
 - Copy pre-approved infrastructure from oddly-infrastructures repository for new projects
+- Automatically delete Example* template files after infrastructure copy
 - Generate services following DDD + MVC architecture
 - Enforce strict layer separation (Domain, Application, Infrastructure)
 - Implement repository patterns with proper abstraction
@@ -140,17 +141,17 @@ Build REST backends using Domain-Driven Design (DDD) with Model-View-Controller 
 - Working with TypeScript/Node.js, C#, or Java backend services
 - Require Domain-Driven Design patterns
 
-**Path**: `.github/agents/infrastructures/ddd/oddly-ddd-rest-v2.3.0.md`
+**Path**: `.github/agents/infrastructures/ddd/oddly-ddd-rest-v2.4.0.md`
 
 ---
 
 ### DDD REST Refactor Agent
 **ID**: `agent-ddd-rest-refactor-da8c8190`  
 **Category**: Development  
-**Version**: 1.1.0  
+**Version**: 1.2.0  
 **Status**: Active
 
-Refactor legacy code to DDD + MVC REST architecture while preserving 100% of business logic. Copies pre-approved infrastructure from oddly-infrastructures repository, moves existing code to `/legacy` subfolder, and applies mandatory architectural standards to infrastructure only. Supports multiple business subdomains in monolithic repositories - creates separate root folders with complete infrastructure copies for each subdomain. This is an infrastructure refactor agent that NEVER modifies business rules, calculations, or workflows.
+Refactor legacy code to DDD + MVC REST architecture while preserving 100% of business logic. Copies pre-approved infrastructure from oddly-infrastructures repository, removes Example* template files, moves existing code to `/legacy` subfolder, and applies mandatory architectural standards to infrastructure only. Supports multiple business subdomains in monolithic repositories - creates separate root folders with complete infrastructure copies for each subdomain. This is an infrastructure refactor agent that NEVER modifies business rules, calculations, or workflows.
 
 **Key Capabilities:**
 - Detect programming language from legacy code (C#, Java, Python, TypeScript)
@@ -158,6 +159,7 @@ Refactor legacy code to DDD + MVC REST architecture while preserving 100% of bus
 - Create separate root folder for each subdomain with complete infrastructure
 - Backup all legacy code to `/legacy` subfolder automatically
 - Copy language-specific infrastructure from oddly-infrastructures repository (to root or each subdomain)
+- Automatically delete Example* template files from all applicable directories
 - Analyze and document all existing business logic before refactoring
 - Map legacy code to specific subdomains when multiple domains exist
 - Extract domain models (BMOs) with preserved business methods
@@ -175,7 +177,7 @@ Refactor legacy code to DDD + MVC REST architecture while preserving 100% of bus
 - Require strict preservation of existing business functionality
 - Need to split monolithic application into subdomain-based structure
 
-**Path**: `.github/agents/infrastructures/ddd/oddly-ddd-rest-refactor-v1.1.0.agent.md`
+**Path**: `.github/agents/infrastructures/ddd/oddly-ddd-rest-refactor-v1.2.0.agent.md`
 
 ---
 
